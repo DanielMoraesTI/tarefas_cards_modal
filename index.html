@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Gestão Escritório Advocacia</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="ts/main.js" defer></script>
+</head>
+<body>
+    <header>
+        <h1><i class="icon">⚖️</i>Escritório Advocacia: Colaboradores & Tarefas</h1>
+        <div class="stats-bar">
+            <p>Utilizadores: <span id="userCount">0</span> | 
+               Ativos: <span id="activeCount" class="status-active">0</span> | 
+               Inativos: <span id="inactiveCount" class="status-inactive">0</span>
+            </p>
+            <div class="stats-summary">
+                <span>Atividade: <span id="activityRate">0%</span></span>
+                <div class="percent"><div id="activityBar"></div></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard-container">
+        <section id="col-users" class="column">
+            <h2><i class="icon">👤</i> Gestão de Utilizadores</h2>
+            
+            <form id="formAdd" class="form-panel" novalidate>
+                <div class="input-group">
+                    <input id="name" type="text" class="boxEnter" placeholder="Nome do Utilizador">
+                    <input id="email" type="email" class="boxEnter" placeholder="E-mail">
+                    <button id="add" type="submit">Adicionar</button>
+                </div>
+                <span id="erro"></span>
+            </form>
+
+            <div class="search-filters">
+                <input type="text" id="searchInput" placeholder="Pesquisar utilizador..." class="boxEnter">
+                <div class="btn-group-mini">
+                    <button id="filterActive">Ativos</button>
+                    <button id="showAll">Todos</button>
+                    <button id="sortName">A-Z</button>
+                </div>
+            </div>
+
+            <section id="users">
+                <ul id="usersList" class="user-container">
+
+                </ul>
+            </section>
+        </section>
+
+        <section id="col-tasks" class="column active-column">
+            <div id="task-context-header">
+                <h2><i class="icon">📋</i> Tarefas: <span id="selectedUserName">Nenhum selecionado</span></h2>
+                <small>ID Selecionado: <span id="selectedUserIdDisplay">-</span></small>
+            </div>
+
+            <div id="problem" class="task-panel">
+                <div id="error"></div>
+                <div id="mainActions">
+                    <button id="openModalBtn">Nova Tarefa</button>
+                    <button id="btnClearCompleted">Limpar Concluídas</button>
+                    <button id="btnSort">Ordenar A-Z</button>
+                </div>
+
+                <dialog id="taskModal">
+                    <div class="modal-content">
+                        <h2>Cadastrar Nova Tarefa</h2>
+
+                        <input type="hidden" id="editTaskId">
+                        
+                        <textarea id="newTask" placeholder="Descreva a tarefa..." rows="3"></textarea>
+                        
+                        <div class="select-group">
+                            <select id="categorySelect">
+                                <option value="Audiência">Audiência</option>
+                                <option value="Atendimento">Atendimento</option>
+                                <option value="Análise">Análise</option>
+                            </select>
+                            <select id="subjectSelect">
+                                <option value="Civil">Civil</option>
+                                <option value="Trabalhista">Trabalhista</option>
+                                <option value="Penal">Penal</option>
+                            </select>
+                        </div>
+
+                        <div class="modal-buttons">
+                            <button id="btnCancelTask" type="button">Cancelar</button>
+                            <button id="btnSaveTask" type="button">Salvar Tarefa</button>
+                        </div>
+                    </div>
+                </dialog>
+
+                <div id="search" class="search-container">
+                    <input id="searchTask" type="text" placeholder="Pesquisar nas tarefas deste utilizador...">
+                </div>
+
+                <ul id="taskList">
+                </ul>            
+            </div>
+        </section>
+    </main>
+
+    <section id="userDetails" class="details-container" style="display:none;">
+        <h2>Detalhes do Utilizador</h2>
+        <div id="detailsContent"></div>
+        <button id="closeDetails">Fechar</button>
+    </section>
+
+    <dialog id="errorModal">
+        <div style="padding: 20px; text-align: center;">
+            <p id="modalMessage"></p>
+            <button id="closeModal" type="button">Fechar</button>
+        </div>
+    </dialog>
+
+    <dialog id="confirmModal">
+        <p id="confirmMessage"></p>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="btnCancel" type="button">Cancelar</button>
+            <button id="btnConfirmAction" type="button" style="background: red; color: white;">Remover</button>
+        </div>
+    </dialog>
+
+    <footer>
+        <p>© 2026 | Projeto realizado por Daniel Moraes - Curso Frontend, Programa UPskill, Faculdade de Ciências da Universidade de Lisboa</p>
+    </footer>    
+</body>
+</html>
