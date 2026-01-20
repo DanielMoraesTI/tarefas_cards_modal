@@ -55,6 +55,10 @@ git clone https://github.com/DanielMoraesTI/tarefas_cards_modal.git
 Abre o ficheiro index.html no navegador
 (não requer servidor nem dependências externas)
 
+Pode carregar neste link com a página publicada pelo GitHub e utilizar:
+
+https://danielmoraesti.github.io/tarefas_cards_modal/
+
 ## Dados e Demonstração
 
 🧪 Dados de Demonstração
