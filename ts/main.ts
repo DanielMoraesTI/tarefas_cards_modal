@@ -6,6 +6,7 @@ interface User {
     active: boolean;
 }
 
+//Utilizado o public criando propriedades que podem ser acessadas de qualquer lugar: por instâncias da classe, por subclasses e por funções externas
 class UserClass implements User {
     constructor(
         public id: number,
