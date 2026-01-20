@@ -59,6 +59,10 @@ O projeto carrega automaticamente utilizadores fictícios para testes iniciais, 
 
 - [@DanielMoraesTI](https://github.com/DanielMoraesTI)
 
+Página Publicada no GitHub
+
+https://danielmoraesti.github.io/tarefas_cards_modal/
+
 
 ## Licença
 
