@@ -1,3 +1,4 @@
+//Molde para o User
 interface User {
     id: number;
     name: string;
@@ -17,6 +18,7 @@ class UserClass implements User {
 type workCategoria = 'Audiência' | 'Atendimento' | 'Análise';
 type subjectCategoria = 'Civil' | 'Trabalhista' | 'Penal';
 
+//Molde para Tarefas
 interface Task {
     id: number;
     userId: number;
@@ -36,7 +38,7 @@ const taskListUI = document.getElementById("taskList") as HTMLUListElement;
 const newTaskInput = document.getElementById("newTask") as HTMLInputElement;
 const selectedUserNameUI = document.getElementById("selectedUserName") as HTMLSpanElement;
 
-
+//Função que verifica, gera os Usuários e calcula a quantidade de ativos, inativos e percentual de ativos
 function renderUsers(arrayToRender: User[] = listUsers): void {
     usersListUI.innerHTML = "";
     
@@ -99,6 +101,7 @@ function renderUsers(arrayToRender: User[] = listUsers): void {
     });
 }
 
+//Função para remover usuários e atualizar lista de Cards
 function removeUser(id: number): void {
     if (confirm("Deseja eliminar este utilizador e as suas tarefas?")) {
         listUsers = listUsers.filter(u => u.id !== id);
@@ -132,7 +135,7 @@ function selectUser(id: number): void {
     }
 }
 
-
+//Função para criar tarefas e atualizar lista determinada para cada usuário
 function renderTasks(arrayToRender?: Task[]): void {
     taskListUI.innerHTML = "";
     if (selectedUserId === null) {
@@ -166,8 +169,8 @@ function renderTasks(arrayToRender?: Task[]): void {
             </div>
             <div class="task-btns">
                 <button class="btnEdit">Editar</button>
-                <button class="btnDone">${task.completed ? 'Reabrir' : 'OK'}</button>
-                <button class="btnDelTask" style="color:red">X</button>
+                <button class="btnDone">${task.completed ? 'Reabrir' : 'Concluída'}</button>
+                <button class="btnDelTask">Fechar</button>
             </div>
         `;
 
@@ -484,7 +487,7 @@ function openEditModal(taskId: number): void {
 
 
 
-
+//Função para gerar Users Fakes
 function loadInitialData(): void {
 
     const fakeData = [

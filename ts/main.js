@@ -14,6 +14,7 @@ const usersListUI = document.getElementById("usersList");
 const taskListUI = document.getElementById("taskList");
 const newTaskInput = document.getElementById("newTask");
 const selectedUserNameUI = document.getElementById("selectedUserName");
+//Função que verifica, gera os Usuários e calcula a quantidade de ativos, inativos e percentual de ativos
 function renderUsers(arrayToRender = listUsers) {
     usersListUI.innerHTML = "";
     const totalUsers = listUsers.length;
@@ -71,6 +72,7 @@ function renderUsers(arrayToRender = listUsers) {
         usersListUI.appendChild(cardDiv);
     });
 }
+//Função para remover usuários e atualizar lista de Cards
 function removeUser(id) {
     if (confirm("Deseja eliminar este utilizador e as suas tarefas?")) {
         listUsers = listUsers.filter(u => u.id !== id);
@@ -102,6 +104,7 @@ function selectUser(id) {
         renderTasks();
     }
 }
+//Função para criar tarefas e atualizar lista determinada para cada usuário
 function renderTasks(arrayToRender) {
     taskListUI.innerHTML = "";
     if (selectedUserId === null) {
@@ -131,8 +134,8 @@ function renderTasks(arrayToRender) {
             </div>
             <div class="task-btns">
                 <button class="btnEdit">Editar</button>
-                <button class="btnDone">${task.completed ? 'Reabrir' : 'OK'}</button>
-                <button class="btnDelTask" style="color:red">X</button>
+                <button class="btnDone">${task.completed ? 'Reabrir' : 'Concluída'}</button>
+                <button class="btnDelTask">Fechar</button>
             </div>
         `;
         (_b = li.querySelector(".btnEdit")) === null || _b === void 0 ? void 0 : _b.addEventListener("click", () => {
@@ -379,6 +382,7 @@ function openEditModal(taskId) {
     editTaskIdElem.value = taskId.toString();
     taskModal.showModal();
 }
+//Função para gerar Users Fakes
 function loadInitialData() {
     const fakeData = [
         { id: 1, name: "Cynhtia", email: "cynthia@gmail.com", active: true },

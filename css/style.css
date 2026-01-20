@@ -163,6 +163,11 @@ input, select {
     font-size: 0.9rem;
 }
 
+.btnDelTask {
+    background-color: red;
+    color: white;
+}
+
 button {
     padding: 10px 15px;
     border: none;
@@ -356,7 +361,8 @@ button:hover { opacity: 0.9;
 }
 
 #btnCancelTask {
-    background-color: #eee;
+    background-color: red;
+    color: white;
     border: none;
     padding: 8px 15px;
     border-radius: 5px;
