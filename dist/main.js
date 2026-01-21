@@ -1,3 +1,4 @@
+"use strict";
 var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
 //Utilizado o public criando propriedades que podem ser acessadas de qualquer lugar: por instâncias da classe, por subclasses e por funções externas
 class UserClass {

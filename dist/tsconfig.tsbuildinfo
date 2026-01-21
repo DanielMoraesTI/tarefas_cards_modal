@@ -1,0 +1,1 @@
+{"root":["../src/main.ts","../src/models/index.ts","../src/models/task.ts","../src/models/user.ts","../src/services/index.ts","../src/services/taskservice.ts","../src/services/userservice.ts","../src/ui/index.ts","../src/ui/rendertask.ts","../src/ui/renderuser.ts","../src/utils/utiltypes.ts"],"version":"5.9.3"}
