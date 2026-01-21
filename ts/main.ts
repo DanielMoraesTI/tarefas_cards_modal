@@ -497,7 +497,6 @@ function loadInitialData(): void {
         { id: 3, name: "Daniel Moraes", email: "daniel.moraesa@gmail.com", active: true },
         { id: 4, name: "Natalia", email: "natalia@gmail.com", active: true },
         { id: 5, name: "Debora", email: "debora@gmail.com", active: true },
-        { id: 6, name: "Confuso", email: "muitoconfuso@hope.com", active: true}
     ];
 
     fakeData.forEach(data => {

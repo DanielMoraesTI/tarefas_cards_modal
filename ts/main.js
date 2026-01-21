@@ -1,4 +1,5 @@
 var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+//Utilizado o public criando propriedades que podem ser acessadas de qualquer lugar: por instâncias da classe, por subclasses e por funções externas
 class UserClass {
     constructor(id, name, email, active = true) {
         this.id = id;
@@ -390,7 +391,6 @@ function loadInitialData() {
         { id: 3, name: "Daniel Moraes", email: "daniel.moraesa@gmail.com", active: true },
         { id: 4, name: "Natalia", email: "natalia@gmail.com", active: true },
         { id: 5, name: "Debora", email: "debora@gmail.com", active: true },
-        { id: 6, name: "Confuso", email: "muitoconfuso@hope.com", active: true }
     ];
     fakeData.forEach(data => {
         const newUser = new UserClass(data.id, data.name, data.email, data.active);
