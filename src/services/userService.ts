@@ -14,14 +14,14 @@ export function loadInitialData(renderCallback: () => void): void {
         { id: 5, name: "Debora", email: "debora@gmail.com", active: true },
     ];
 
-    // Limpa a lista antes de adicionar para evitar duplicatas em hot-reload
+    // Limpa a lista antes de adicionar para evitar duplicatas
     listUsers.length = 0; 
     
     fakeData.forEach(data => {
         listUsers.push(new UserClass(data.id, data.name, data.email, data.active));
     });
 
-    renderCallback(); // Aqui ele desenha na tela
+    renderCallback();
 }
 
 export function toggleUserStatus(id: number): void {

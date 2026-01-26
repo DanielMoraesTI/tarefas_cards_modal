@@ -45,8 +45,8 @@ export function renderUsers(arrayToRender = listUsers) {
         cardDiv.onclick = (e) => {
             const target = e.target;
             if (target.tagName !== 'BUTTON') {
-                setSelectedUserId(user.id); // ATUALIZA O ID NO SERVIÇO
-                selectUser(user.id); // CHAMA A FUNÇÃO DE UI
+                setSelectedUserId(user.id);
+                selectUser(user.id);
                 window.abrirModalDetalhes(user);
             }
         };

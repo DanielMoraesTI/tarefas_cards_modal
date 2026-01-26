@@ -17,6 +17,9 @@ export function renderTasks(arrayToRender?: Task[]): void {
     tasksToShow.forEach(task => {
         const li = document.createElement("li");
         li.className = "task-item";
+
+        const creationDate = new Date(task.createdAt);
+        const dataCriacaoFormatada = `${creationDate.getDate().toString().padStart(2, '0')}/${(creationDate.getMonth() + 1).toString().padStart(2, '0')}`;
         
         let completionDateHtml = "";
         if (task.completed && task.concludedAt) {
@@ -26,10 +29,10 @@ export function renderTasks(arrayToRender?: Task[]): void {
         }
 
         li.innerHTML = `
-            <div style="task-content" ${task.completed ? 'text-decoration: line-through; opacity: 0.6' : ''}">
+            <div class="task-content" style="${task.completed ? 'text-decoration: line-through; opacity: 0.6' : ''}">
                 <span class="badge-cat">${task.category}</span>
                 <span class="badge-sub">${task.subject}</span>
-                <span class="task-title">${task.title}</span>
+                <small style="color: #999;">[Criada em: ${dataCriacaoFormatada}]</small> <span class="task-title">${task.title}</span>
                 ${completionDateHtml}
             </div>
             <div class="task-btns">

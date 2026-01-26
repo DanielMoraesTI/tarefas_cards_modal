@@ -144,7 +144,8 @@ document.getElementById("btnSaveTask")?.addEventListener("click", () => {
                 title: newTaskInput.value,
                 completed: false,
                 category: cat,
-                subject: sub
+                subject: sub,
+                createdAt: new Date()
             });
         }
 

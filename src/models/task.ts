@@ -7,6 +7,7 @@ export interface Task {
     completed: boolean;
     category: workCategoria;
     subject: subjectCategoria;
+    createdAt: Date;
     concludedAt?: Date;
 }
 

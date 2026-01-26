@@ -10,12 +10,12 @@ export function loadInitialData(renderCallback) {
         { id: 4, name: "Natalia", email: "natalia@gmail.com", active: true },
         { id: 5, name: "Debora", email: "debora@gmail.com", active: true },
     ];
-    // Limpa a lista antes de adicionar para evitar duplicatas em hot-reload
+    // Limpa a lista antes de adicionar para evitar duplicatas
     listUsers.length = 0;
     fakeData.forEach(data => {
         listUsers.push(new UserClass(data.id, data.name, data.email, data.active));
     });
-    renderCallback(); // Aqui ele desenha na tela
+    renderCallback();
 }
 export function toggleUserStatus(id) {
     const user = listUsers.find(u => u.id === id);
