@@ -1,20 +1,19 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "ESNext",
     "module": "ESNext",
-    "lib": ["DOM", "ES2017"],
-
-    "baseUrl": "./src",
-    "paths": {
-      "@models/*": ["src/models/*"],
-      "@services/*": ["src/services/*"],
-      "@ui/*": ["src/ui/*"],
-      "@utils/*": ["src/utils/*"]
-    },
-
-    "strict": true,
+    "moduleResolution": "node", /* Permite que o TS encontre o index.ts dentro das pastas */
     "outDir": "./dist",
-    "rootDir": "./"
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["DOM", "ESNext"]
   },
-  "include": ["**/*.ts"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }
+
+
+
