@@ -1,3 +1,3 @@
-export * from './user.js';
+export * from './UserClass.js';
 export * from './task.js';
 

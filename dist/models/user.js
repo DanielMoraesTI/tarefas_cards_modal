@@ -1,14 +1,29 @@
-export class UserClass {
-    id;
-    name;
-    email;
+import { BaseEntity } from './BaseEntity.js';
+export class UserClass extends BaseEntity {
+    _name;
+    _email;
     active;
-    createdAt;
-    constructor(id, name, email, active = true, createdAt = new Date()) {
-        this.id = id;
-        this.name = name;
-        this.email = email;
+    constructor(id, name, email, active = true) {
+        super(id);
+        this._name = name;
+        this.validateEmail(email);
+        this._email = email;
         this.active = active;
-        this.createdAt = createdAt;
+    }
+    get name() { return this._name; }
+    set name(value) {
+        if (value.length < 2)
+            throw new Error("Nome muito curto");
+        this._name = value;
+    }
+    get email() { return this._email; }
+    set email(value) {
+        this.validateEmail(value);
+        this._email = value;
+    }
+    validateEmail(email) {
+        if (!email.includes("@")) {
+            throw new Error("Email inválido: deve conter @");
+        }
     }
 }

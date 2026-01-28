@@ -231,6 +231,20 @@ button:hover { opacity: 0.9;
     border: 1px solid #e1bee7;
 }
 
+.badge-status {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    background-color: #eee;
+}
+
+.badge-status:contains("Concluída") {
+    background-color: #d4edda;
+    color: #155724;
+}
+
 .task-title {
     font-weight: 500;
     margin-left: 5px;
@@ -292,6 +306,33 @@ button:hover { opacity: 0.9;
 }
 .status-inactive {
     color: #e74c3c;
+}
+
+.details-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.details-overlay.details-overlay-hidden {
+    display: none !important;
+}
+
+.details-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    min-width: 300px;
+    max-width: 500px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    position: relative;
 }
 
 #errorModal {
@@ -378,6 +419,118 @@ button:hover { opacity: 0.9;
     cursor: pointer;
 }
 
+#global-search-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    background-color: #fdfdfd;
+    padding: 8px 15px;
+    margin: 0 20px 15px 20px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+#global-search-panel h3 {
+    width: auto;
+    margin: 0 10px 0 0;
+    color: #2c3e50;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+#global-search-panel .field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#global-search-panel label {
+    font-size: 0.75rem;
+    color: #666;
+    font-weight: 600;
+}
+
+#global-search-panel input, 
+#global-search-panel select {
+    padding: 4px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    height: 28px;
+    background: white;
+}
+
+#search-title { width: 160px; }
+#search-user { width: 60px; }
+#search-status { width: 120px; }
+
+#global-search-panel input:focus, 
+#global-search-panel select:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+}
+
+/* Compact counters panel with left/right groups */
+#contadores-stats {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    margin: 4px 0 6px 0;
+    min-height: 36px;
+}
+
+#counters-left, #counters-right { display:flex; align-items:center }
+
+.counter-group { display:flex; gap:6px; align-items:center }
+.counter-group.left { justify-content:flex-start }
+.counter-group.right { justify-content:flex-end }
+
+#contadores-stats .counter-block {
+    background: rgba(255,255,255,0.95);
+    padding: 4px 6px;
+    border-radius: 5px;
+    min-width: 56px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+#contadores-stats .counter-block .num {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1.2;
+}
+
+#contadores-stats .counter-block .label {
+    display: block;
+    font-size: 0.58rem;
+    color: #7f8c8d;
+    margin-top: 1px;
+    line-height: 1;
+}
+
+/* Cores específicas */
+.num-active { color: #27ae60 !important; }
+.num-inactive { color: #e74c3c !important; }
+.num-completed { color: #27ae60 !important; }
+.num-total { color: #2c3e50 !important; }
+.num-percentage { color: #8e44ad !important; }
+
+/* Inline compact filter between counters */
+.inline-filter { display:flex; align-items:center; gap:10px; padding:4px 8px; flex:1; background: #f4f4f4 !important; border-radius:5px !important; }
+.inline-filter input, .inline-filter select { height:32px; padding:6px; font-size:0.85rem; }
+.inline-filter .field input { width:140px }
+
+/* Smaller global search spacing to keep counters visible */
+#global-search-panel { padding: 10px 12px; gap:8px; }
+
+#search-user { max-width: 160px; }
+
 
 footer {
         grid-area: footer;
@@ -388,7 +541,143 @@ footer {
         font-size: 0.8rem;
     }
 
+/* Classes para estilos do HTML (movidos de inline) */
+#global-search-panel.inline-filter {
+    margin: 0 !important;
+    padding: 4px 8px !important;
+    background: #f4f4f4 !important;
+    border-radius: 6px !important;
+    display: flex !important;
+    gap: 10px !important;
+    align-items: center !important;
+    flex: 1 !important;
+}
+
+#global-search-panel label {
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #2c3e50;
+    white-space: nowrap;
+    margin: 0;
+}
+
+.filter-field {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex: 1;
+}
+
+#search-title {
+    padding: 5px;
+    height: 28px;
+    flex: 1;
+    min-width: 100px;
+}
+
+#search-user,
+#search-status {
+    height: 28px;
+    padding: 5px;
+}
+
+#search-user {
+    flex: 0.8;
+    min-width: 80px;
+}
+
+#search-status {
+    flex: 0.7;
+    min-width: 80px;
+}
+
+#role {
+    cursor: pointer;
+}
+
+.input-group-modal {
+    margin-top: 15px;
+}
+
+.input-group-modal label {
+    display: block;
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+#taskDeadline,
+#assignSelect {
+    width: 100%;
+}
+
+#assignSelect {
+    min-height: 100px;
+    padding: 5px;
+}
+
+.modal-buttons-custom {
+    margin-top: 20px;
+}
+
+#tagFilterContainer {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    display: none;
+}
+
+#tagFilterContainer span {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #666;
+    margin-right: 10px;
+}
+
+#tagCloud {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+#btnClearFilter {
+    margin-left: 10px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    border: none;
+    background: #e74c3c;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+#errorModal-inner {
+    padding: 20px;
+    text-align: center;
+}
+
+#confirmModal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+#btnConfirmAction {
+    background: red;
+    color: white;
+}
+
 @media (max-width: 1024px) {
+    header {
+        text-align: center;
+    }
+
+    header h1 {
+        margin: 0 auto;
+        text-align: center;
+    }
+
     .dashboard-container {
         flex-direction: column;
         height: auto; }
@@ -396,5 +685,25 @@ footer {
     .column {
         height: auto;
     }
+
+    /* On smaller screens, stack counters above the filter and make them compact */
+    #contadores-stats {
+        width: 100%;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 4px;
+        gap: 4px;
+        min-height: auto;
+    }
+
+    #counters-left, #counters-right {
+        justify-content: center;
+    }
+
+    #contadores-stats .counter-block { min-width: 48px; padding: 3px 5px; font-size: 0.85rem; }
+    .inline-filter { flex: 1; min-width: auto; margin:0; justify-content: center; }
+    .inline-filter .field { flex: 1; }
+    .inline-filter input { width: 100% !important; }
 }
 

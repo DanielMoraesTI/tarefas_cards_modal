@@ -1,230 +1,53 @@
-import { UserClass } from './models/index.js';
-import { listUsers, selectedUserId, loadInitialData } from './services/index.js';
-import { listTasks, setListTasks } from './services/index.js';
-import { renderUsers, renderTasks } from './ui/index.js';
-// Seletores do DOM
-const newTaskInput = document.getElementById("newTask");
-const taskModal = document.getElementById("taskModal");
-const errorModal = document.getElementById("errorModal");
-const confirmModal = document.getElementById("confirmModal");
-const selectedUserNameUI = document.getElementById("selectedUserName");
-//Listeners de Usuários
-document.getElementById("formAdd")?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const nameInput = document.getElementById("name");
-    const emailInput = document.getElementById("email");
-    const erroDisplay = document.getElementById("erro");
-    if (erroDisplay) {
-        erroDisplay.innerHTML = "";
-        erroDisplay.className = "";
-    }
-    const nameValue = nameInput.value.trim();
-    const emailValue = emailInput.value.trim();
-    if (nameValue === "" || emailValue === "") {
-        if (erroDisplay) {
-            erroDisplay.innerHTML = "Preencha os campos corretamente";
-            erroDisplay.className = "erro";
-        }
-        return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailValue)) {
-        if (erroDisplay) {
-            erroDisplay.innerHTML = 'Introduza um endereço de e-mail válido (ex: nome@dominio.com)';
-            erroDisplay.className = "erro";
-        }
-        return;
-    }
-    const newId = listUsers.length > 0 ? Math.max(...listUsers.map(u => u.id)) + 1 : 1;
-    const newUser = new UserClass(newId, nameValue, emailValue, true);
-    listUsers.push(newUser);
+import { loadInitialData, listTasks, createFakeTasksIfEmpty, assignmentService } from './services/index.js';
+import { renderUsers, renderTasks, setupEventListeners, atualizarConteudoModal, setUserSendoVisualizado, updateExtendedStatistics } from './ui/index.js';
+setupEventListeners();
+loadInitialData(() => {
     renderUsers();
-    e.target.reset();
-});
-document.getElementById("searchInput")?.addEventListener("input", (e) => {
-    const val = e.target.value.toLowerCase();
-    renderUsers(listUsers.filter(u => u.name.toLowerCase().includes(val)));
-});
-document.getElementById("sortName")?.addEventListener("click", () => {
-    listUsers.sort((a, b) => a.name.localeCompare(b.name));
+    createFakeTasksIfEmpty();
+    renderTasks();
     renderUsers();
+    updateExtendedStatistics();
 });
-document.getElementById("filterActive")?.addEventListener("click", () => {
-    renderUsers(listUsers.filter(u => u.active));
-});
-document.getElementById("showAll")?.addEventListener("click", () => renderUsers(listUsers));
-//Listeners de Tarefas
-document.getElementById("searchTask")?.addEventListener("input", (e) => {
-    if (selectedUserId === null)
-        return;
-    const val = e.target.value.toLowerCase();
-    const filtered = listTasks.filter(t => t.userId === selectedUserId && t.title.toLowerCase().includes(val));
-    renderTasks(filtered);
-});
-document.getElementById("btnSort")?.addEventListener("click", () => {
-    if (selectedUserId === null)
-        return;
-    const sorted = listTasks.filter(t => t.userId === selectedUserId).sort((a, b) => a.title.localeCompare(b.title));
-    renderTasks(sorted);
-});
-document.getElementById("btnClearCompleted")?.addEventListener("click", async () => {
-    if (selectedUserId === null) {
-        showModal("Selecione um utilizador primeiro!");
-        return;
-    }
-    const temConcluidas = listTasks.some(t => t.userId === selectedUserId && t.completed);
-    if (!temConcluidas) {
-        showModal("Não existem tarefas concluídas!");
-        return;
-    }
-    const confirmado = await askConfirmation("Deseja remover as tarefas concluídas?");
-    if (confirmado) {
-        setListTasks(listTasks.filter(t => t.userId !== selectedUserId || !t.completed));
-        renderTasks();
-        renderUsers();
-    }
-});
-//Modal de Tarefa (Salvar/Editar)
-document.getElementById("btnSaveTask")?.addEventListener("click", () => {
-    const categoryElem = document.getElementById("categorySelect");
-    const subjectElem = document.getElementById("subjectSelect");
-    const editTaskIdElem = document.getElementById("editTaskId");
-    if (!newTaskInput || !categoryElem || !subjectElem)
-        return;
-    const cat = categoryElem.value;
-    const sub = subjectElem.value;
-    const taskIdStr = editTaskIdElem.value;
-    if (newTaskInput.value.trim().length > 3) {
-        if (taskIdStr) {
-            const idToEdit = parseInt(taskIdStr);
-            const taskIndex = listTasks.findIndex(t => t.id === idToEdit);
-            if (taskIndex !== -1) {
-                listTasks[taskIndex].title = newTaskInput.value;
-                listTasks[taskIndex].category = cat;
-                listTasks[taskIndex].subject = sub;
-            }
-        }
-        else {
-            if (selectedUserId === null) {
-                showModal("Selecione um utilizador primeiro.");
-                return;
-            }
-            listTasks.push({
-                id: Date.now(),
-                userId: selectedUserId,
-                title: newTaskInput.value,
-                completed: false,
-                category: cat,
-                subject: sub,
-                createdAt: new Date()
-            });
-        }
-        newTaskInput.value = "";
-        editTaskIdElem.value = "";
-        taskModal.close();
-        renderTasks();
-        renderUsers();
-    }
-    else {
-        showModal("A descrição deve ter mais de 3 caracteres.");
-    }
-});
-document.getElementById("btnCancelTask")?.addEventListener("click", () => {
-    taskModal.close();
-});
-//Funções Auxiliares de UI (Expostas no Window)
+//Exposição Global (Necessário para as chamadas diretas no seu HTML/Strings)
 window.abrirModalDetalhes = (user) => {
     const modalDetails = document.getElementById("userDetails");
-    const detailsContent = document.getElementById("detailsContent");
-    const dataCriacao = new Date(user.createdAt).toLocaleDateString('pt-PT', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-    const tarefasDoUsuario = listTasks.filter(t => t.userId === user.id);
-    const concluidas = tarefasDoUsuario.filter(t => t.completed).length;
-    detailsContent.innerHTML = `
-        <div class="modal-info">
-            <p><strong>Nome:</strong> ${user.name}</p>
-            <p><strong>Email:</strong> ${user.email}</p>
-            <p><strong>Status:</strong> ${user.active ? 'Ativo' : 'Inativo'}</p>
-            <p><strong>Criado em:</strong> ${dataCriacao}</p> <hr>
-            <hr>
-            <ul>
-                <li>Total: ${tarefasDoUsuario.length}</li>
-                <li>Concluídas: ${concluidas}</li>
-            </ul>
-        </div>
-    `;
-    modalDetails.style.display = "block";
+    if (modalDetails) {
+        setUserSendoVisualizado(user);
+        atualizarConteudoModal(user);
+        modalDetails.classList.remove("details-overlay-hidden");
+        window.refreshModalData = () => atualizarConteudoModal(user);
+    }
 };
 window.openEditModal = (taskId) => {
-    const task = listTasks.find(t => t.id === taskId);
-    if (!task)
-        return;
-    document.getElementById("editTaskId").value = taskId.toString();
-    newTaskInput.value = task.title;
-    document.getElementById("categorySelect").value = task.category;
-    document.getElementById("subjectSelect").value = task.subject;
-    taskModal.showModal();
-};
-function showModal(message) {
-    const msgContainer = document.getElementById("modalMessage");
-    if (errorModal && msgContainer) {
-        msgContainer.innerText = message;
-        errorModal.showModal();
+    const task = listTasks.find((t) => t.id === taskId);
+    if (task) {
+        const editTaskIdElem = document.getElementById("editTaskId");
+        const newTaskInput = document.getElementById("newTask");
+        const taskModal = document.getElementById("taskModal");
+        const assignSelect = document.getElementById("assignSelect");
+        if (editTaskIdElem && newTaskInput && taskModal) {
+            editTaskIdElem.value = taskId.toString();
+            newTaskInput.value = task.title;
+            if (assignSelect) {
+                Array.from(assignSelect.options).forEach(opt => opt.selected = false);
+                const assignedIds = assignmentService.getUsersFromTask(taskId);
+                assignedIds.forEach(uid => {
+                    const option = assignSelect.querySelector(`option[value="${uid}"]`);
+                    if (option)
+                        option.selected = true;
+                });
+            }
+            taskModal.showModal();
+        }
     }
-}
-function askConfirmation(message) {
-    const msgContainer = document.getElementById("confirmMessage");
-    const btnConfirm = document.getElementById("btnConfirmAction");
-    const btnCancel = document.getElementById("btnCancel");
-    if (msgContainer)
-        msgContainer.innerText = message;
-    confirmModal.showModal();
-    return new Promise((resolve) => {
-        btnConfirm?.addEventListener("click", () => { confirmModal.close(); resolve(true); }, { once: true });
-        btnCancel?.addEventListener("click", () => { confirmModal.close(); resolve(false); }, { once: true });
-    });
-}
-loadInitialData(renderUsers);
-//Se houver botões no HTML chamando funções diretamente:
+};
+window.abrirModalEdicao = (taskOrId) => {
+    if (!taskOrId)
+        return;
+    const id = typeof taskOrId === 'number' ? taskOrId : (taskOrId.id ?? (taskOrId.getId ?? null));
+    if (id === null)
+        return;
+    window.openEditModal?.(Number(id));
+};
 window.renderUsers = renderUsers;
 window.renderTasks = renderTasks;
-document.querySelectorAll(".btnCloseModal").forEach(btn => {
-    btn.addEventListener("click", () => {
-        const modal = btn.closest("dialog") || document.getElementById("userDetails");
-        if (modal instanceof HTMLDialogElement) {
-            modal.close();
-        }
-        else if (modal) {
-            modal.style.display = "none";
-        }
-    });
-});
-// --- Listener para fechar o Modal de Erro ---
-document.getElementById("closeModal")?.addEventListener("click", () => {
-    const errorModal = document.getElementById("errorModal");
-    if (errorModal) {
-        errorModal.close(); // Fecha o elemento <dialog>
-    }
-});
-document.getElementById("closeDetails")?.addEventListener("click", () => {
-    const modalDetails = document.getElementById("userDetails");
-    if (modalDetails)
-        modalDetails.style.display = "none";
-});
-document.getElementById("openModalBtn")?.addEventListener("click", () => {
-    if (selectedUserId === null) {
-        showModal("Por favor, selecione um utilizador primeiro!");
-        return;
-    }
-    document.getElementById("editTaskId").value = "";
-    newTaskInput.value = "";
-    const modalTitle = document.querySelector("#taskModal h2");
-    if (modalTitle)
-        modalTitle.textContent = "Nova Tarefa";
-    taskModal.showModal();
-});

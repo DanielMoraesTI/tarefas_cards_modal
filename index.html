@@ -10,15 +10,25 @@
 <body>
     <header>
         <h1><i class="icon">⚖️</i>Escritório Advocacia: Colaboradores & Tarefas</h1>
-        <div class="stats-bar">
-            <p>Utilizadores: <span id="userCount">0</span> | 
-               Ativos: <span id="activeCount" class="status-active">0</span> | 
-               Inativos: <span id="inactiveCount" class="status-inactive">0</span>
-            </p>
-            <div class="stats-summary">
-                <span>Atividade: <span id="activityRate">0%</span></span>
-                <div class="percent"><div id="activityBar"></div></div>
-            </div>
+        <div id="contadores-stats">
+            <div id="counters-left"></div>
+
+            <section id="global-search-panel" class="inline-filter">
+                <label>Filtrar:</label>
+                <div class="filter-field">
+                    <input type="text" id="search-title" placeholder="Título...">
+                    <select id="search-user">
+                        <option value="">Usuário</option>
+                    </select>
+                    <select id="search-status">
+                        <option value="">Status</option>
+                        <option value="Aberta">Aberta</option>
+                        <option value="Concluída">Concluída</option>
+                    </select>
+                </div>
+            </section>
+
+            <div id="counters-right"></div>
         </div>
     </header>
 
@@ -30,6 +40,15 @@
                 <div class="input-group">
                     <input id="name" type="text" class="boxEnter" placeholder="Nome do Utilizador">
                     <input id="email" type="email" class="boxEnter" placeholder="E-mail">
+                    
+                    <select id="role" class="boxEnter">
+                        <option value="" disabled selected>Selecionar Função</option>
+                        <option value="ADMIN">Administrador (Total)</option>
+                        <option value="MANAGER">Gestor (Edição)</option>
+                        <option value="MEMBER">Membro (Tarefas)</option>
+                        <option value="VIEWER">Visualizador (Leitura)</option>
+                    </select>
+
                     <button id="add" type="submit">Adicionar</button>
                 </div>
                 <span id="erro"></span>
@@ -40,14 +59,12 @@
                 <div class="btn-group-mini">
                     <button id="filterActive">Ativos</button>
                     <button id="showAll">Todos</button>
-                    <button id="sortName">A-Z</button>
+                    <button id="sortName">Nome A-Z</button>
                 </div>
             </div>
 
             <section id="users">
-                <ul id="usersList" class="user-container">
-
-                </ul>
+                <ul id="usersList" class="user-container"></ul>
             </section>
         </section>
 
@@ -67,18 +84,31 @@
 
                 <dialog id="taskModal">
                     <div class="modal-content">
-                        <h2>Cadastrar Nova Tarefa</h2>
+                        <h2>Cadastrar/Editar Tarefa</h2>
 
                         <input type="hidden" id="editTaskId">
                         
                         <textarea id="newTask" placeholder="Descreva a tarefa..." rows="3"></textarea>
                         
                         <div class="select-group">
+                            <select id="taskTypeSelect">
+                                <option value="task">Tarefa Comum</option>
+                                <option value="bug">Reportar Bug</option>
+                            </select>
+
+                            <select id="prioritySelect">
+                                <option value="LOW">Prioridade: Baixa</option>
+                                <option value="NORMAL" selected>Prioridade: Normal</option>
+                                <option value="HIGH">Prioridade: Alta</option>
+                                <option value="CRITICAL">Prioridade: CRÍTICA</option>
+                            </select>
+
                             <select id="categorySelect">
                                 <option value="Audiência">Audiência</option>
                                 <option value="Atendimento">Atendimento</option>
                                 <option value="Análise">Análise</option>
                             </select>
+                            
                             <select id="subjectSelect">
                                 <option value="Civil">Civil</option>
                                 <option value="Trabalhista">Trabalhista</option>
@@ -86,7 +116,17 @@
                             </select>
                         </div>
 
-                        <div class="modal-buttons">
+                        <div class="input-group-modal">
+                            <label for="taskDeadline">Prazo de Entrega:</label>
+                            <input type="date" id="taskDeadline" class="boxEnter">
+                        </div>
+
+                        <div class="input-group-modal">
+                            <label for="assignSelect">Atribuir Colaboradores (Ctrl para vários):</label>
+                            <select id="assignSelect" multiple class="boxEnter"></select>
+                        </div>
+
+                        <div class="modal-buttons-custom">
                             <button id="btnCancelTask" type="button">Cancelar</button>
                             <button id="btnSaveTask" type="button">Salvar Tarefa</button>
                         </div>
@@ -96,6 +136,11 @@
                 <div id="search" class="search-container">
                     <input id="searchTask" type="text" placeholder="Pesquisar tarefas...">
                 </div>
+                <div id="tagFilterContainer">
+                    <span>Filtrar por:</span>
+                    <div id="tagCloud"></div>
+                    <button id="btnClearFilter">Limpar Filtro</button>
+                </div>
 
                 <ul id="taskList">
                 </ul>            
@@ -103,14 +148,16 @@
         </section>
     </main>
 
-    <section id="userDetails" class="details-container" style="display:none;">
-        <h2>Detalhes do Utilizador</h2>
-        <div id="detailsContent"></div>
-        <button id="closeDetails">Fechar</button>
+    <section id="userDetails" class="details-overlay details-overlay-hidden">
+        <div class="details-card">
+            <h2>Detalhes do Utilizador</h2>
+            <div id="detailsContent"></div>
+            <button id="closeDetails">Fechar</button>
+        </div>
     </section>
 
     <dialog id="errorModal">
-        <div style="padding: 20px; text-align: center;">
+        <div id="errorModal-inner">
             <p id="modalMessage"></p>
             <button id="closeModal" type="button">Fechar</button>
         </div>
@@ -118,9 +165,9 @@
 
     <dialog id="confirmModal">
         <p id="confirmMessage"></p>
-        <div style="display: flex; gap: 10px; justify-content: center;">
+        <div id="confirmModal-buttons">
             <button id="btnCancel" type="button">Cancelar</button>
-            <button id="btnConfirmAction" type="button" style="background: red; color: white;">Remover</button>
+            <button id="btnConfirmAction" type="button">Remover</button>
         </div>
     </dialog>
 
