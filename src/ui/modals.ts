@@ -21,7 +21,7 @@ export const atualizarConteudoModal = (user: UserClass) => {
     });
 
     const concluidas = tarefasDoUsuario.filter(t => t.completed).length;
-
+    // Teste nova atualização do GitHub para identificar a não atualização do Modal de Detalhes na pages
     detailsContent.innerHTML = `
         <div class="modal-info" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
             <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #2c3e50;">
