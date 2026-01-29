@@ -138,7 +138,7 @@ export function setupEventListeners() {
             nameInput.focus(); return;
         }
         if (!emailRegex.test(emailValue)) {
-            if (erroDisplay) { erroDisplay.innerHTML = 'Introduza um endereço de e-mail válido (ex: nome@domínio.com)'; erroDisplay.className = "erro"; }
+            if (erroDisplay) { erroDisplay.innerHTML = 'Introduza um endereço de e-mail válido (ex: nome@dominio.com)'; erroDisplay.className = "erro"; }
             emailInput.focus(); return;
         }
         if (!roleValue) {

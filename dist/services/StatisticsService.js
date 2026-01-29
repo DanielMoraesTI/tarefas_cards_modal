@@ -1,5 +1,4 @@
 import { listTasks } from './index.js';
-// Serviço para estatísticas relacionadas às tarefas
 export class StatisticsService {
     static countTasks() {
         return listTasks.length;

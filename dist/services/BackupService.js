@@ -1,13 +1,7 @@
 import { listUsers, listTasks } from './index.js';
 import { assignmentService } from './AssignmentService.js';
-/**
- * Sistema de backup lógico dos dados
- * Exporta dados em formato de objetos para armazenamento ou transmissão
- */
+// Exporta dados em formato de objetos para armazenamento ou transmissão
 export class BackupService {
-    /**
-     * Exporta a lista de usuários
-     */
     static exportUsers() {
         return listUsers.map(user => ({
             id: user.getId,
@@ -17,9 +11,6 @@ export class BackupService {
             isActive: user.isActive(),
         }));
     }
-    /**
-     * Exporta a lista de tarefas
-     */
     static exportTasks() {
         return listTasks.map(task => ({
             id: task.id,
@@ -31,9 +22,6 @@ export class BackupService {
             tag: task.tag || null,
         }));
     }
-    /**
-     * Exporta as relações de assignments (tarefas atribuídas aos usuários)
-     */
     static exportAssignments() {
         const assignments = [];
         listTasks.forEach(task => {
@@ -47,9 +35,6 @@ export class BackupService {
         });
         return assignments;
     }
-    /**
-     * Exporta todos os dados num único objeto
-     */
     static exportAll() {
         return {
             timestamp: new Date().toISOString(),

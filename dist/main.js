@@ -1,25 +1,16 @@
 import { loadInitialData, listTasks, createFakeTasksIfEmpty, assignmentService } from './services/index.js';
 import { renderUsers, renderTasks, setupEventListeners, setUserSendoVisualizado, updateExtendedStatistics } from './ui/index.js';
-/**
- * Inicializa os ouvintes de eventos antes de carregar os dados
- * para garantir que a UI responda assim que renderizada.
- */
 setupEventListeners();
-/**
- * Carga inicial de dados com callback de renderização
- */
+// Carga inicial de dados com callback de renderização
 loadInitialData(() => {
-    // Ordem lógica: Criar tarefas fakes -> Renderizar tudo -> Estatísticas
     createFakeTasksIfEmpty();
     renderUsers();
     renderTasks();
     updateExtendedStatistics();
 });
-// --- EXPOSIÇÃO GLOBAL ---
+// EXPOSIÇÃO GLOBAL
 // Necessária para chamadas diretas via strings no HTML ou onclicks legados
-/**
- * Abre o modal de detalhes do utilizador
- */
+// Abre o modal de detalhes do utilizador
 window.abrirModalDetalhes = (user) => {
     const modalDetails = document.getElementById("userDetails");
     if (!modalDetails || !user)
@@ -31,12 +22,10 @@ window.abrirModalDetalhes = (user) => {
     const detailRole = document.getElementById("detailRole");
     if (detailName)
         detailName.textContent = user.name;
-    // Tenta usar o método getEmail/getRole da classe, senão usa a propriedade
     if (detailEmail)
         detailEmail.textContent = typeof user.getEmail === 'function' ? user.getEmail() : user.email;
     if (detailRole)
         detailRole.textContent = typeof user.getRole === 'function' ? user.getRole() : user.role;
-    // Lógica de exibição compatível com dialog ou div comum
     if (modalDetails instanceof HTMLDialogElement) {
         modalDetails.showModal();
     }
@@ -47,9 +36,7 @@ window.abrirModalDetalhes = (user) => {
     // Função de atualização rápida do modal se houver mudanças nos dados
     window.refreshModalData = () => window.abrirModalDetalhes(user);
 };
-/**
- * Lógica centralizada para abrir o modal de edição de tarefa
- */
+// Lógica centralizada para abrir o modal de edição de tarefa
 window.openEditModal = (taskId) => {
     const task = listTasks.find((t) => t.id === taskId);
     if (task) {
@@ -61,7 +48,6 @@ window.openEditModal = (taskId) => {
         if (editTaskIdElem && newTaskInput && taskModal) {
             editTaskIdElem.value = taskId.toString();
             newTaskInput.value = task.title;
-            // Sincroniza os usuários atribuídos no select multiple
             if (assignSelect) {
                 Array.from(assignSelect.options).forEach(opt => opt.selected = false);
                 const assignedIds = assignmentService.getUsersFromTask(taskId);
@@ -75,9 +61,7 @@ window.openEditModal = (taskId) => {
         }
     }
 };
-/**
- * Atalho global para abrir edição aceitando objeto ou ID
- */
+// Atalho global para abrir edição aceitando objeto ou ID
 window.abrirModalEdicao = (taskOrId) => {
     if (!taskOrId)
         return;

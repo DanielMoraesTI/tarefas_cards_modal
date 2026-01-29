@@ -97,7 +97,7 @@ export function setupEventListeners() {
             }
         }
     });
-    // --- ADICIONAR NOVO USUÁRIO ---
+    // ADICIONAR NOVO USUÁRIO
     document.getElementById("formAdd")?.addEventListener("submit", (e) => {
         e.preventDefault();
         const nameInput = document.getElementById("name");
@@ -121,7 +121,7 @@ export function setupEventListeners() {
         }
         if (!emailRegex.test(emailValue)) {
             if (erroDisplay) {
-                erroDisplay.innerHTML = 'Introduza um endereço de e-mail válido (ex: nome@domínio.com)';
+                erroDisplay.innerHTML = 'Introduza um endereço de e-mail válido (ex: nome@dominio.com)';
                 erroDisplay.className = "erro";
             }
             emailInput.focus();
@@ -150,14 +150,14 @@ export function setupEventListeners() {
             }
         }
     });
-    // --- BUSCA RÁPIDA DE USUÁRIOS ---
+    // BUSCA RÁPIDA DE USUÁRIOS
     const searchInput = document.getElementById("searchInput");
     searchInput?.addEventListener("input", (e) => {
         const val = e.target.value.toLowerCase();
         const filteredUsers = listUsers.filter(u => u.name.toLowerCase().includes(val));
         renderUsers(filteredUsers);
     });
-    // --- FILTRO ATIVOS / INATIVOS ---
+    // FILTRO ATIVOS / INATIVOS
     let mostrandoAtivos = true;
     const btnFilterActive = document.getElementById("filterActive");
     btnFilterActive?.addEventListener("click", () => {
@@ -175,7 +175,7 @@ export function setupEventListeners() {
         }
     });
     document.getElementById("showAll")?.addEventListener("click", () => renderUsers(listUsers));
-    // --- ORDENAÇÃO DE USUÁRIOS ---
+    // ORDENAÇÃO DE USUÁRIOS
     let usersSortAscending = true;
     document.getElementById("sortName")?.addEventListener("click", (e) => {
         const sorted = [...listUsers].sort((a, b) => {
@@ -191,7 +191,7 @@ export function setupEventListeners() {
             btn.textContent = usersSortAscending ? "Nome A-Z" : "Nome Z-A";
         renderUsers(sorted);
     });
-    // --- SALVAMENTO E EDIÇÃO DE TAREFAS ---
+    // SALVAMENTO E EDIÇÃO DE TAREFAS
     document.getElementById("btnSaveTask")?.addEventListener("click", () => {
         const editTaskIdElem = document.getElementById("editTaskId");
         const categoryElem = document.getElementById("categorySelect");
@@ -216,10 +216,8 @@ export function setupEventListeners() {
                 priorityService.setPriority(task.id, Priority[prioridade]);
                 if (deadlineInput.value)
                     deadlineService.setDeadline(task.id, new Date(deadlineInput.value));
-                // Limpa e reassocia, garantindo o criador original se necessário
                 assignmentService.getUsersFromTask(task.id).forEach(uid => assignmentService.unassignUser(task.id, uid));
                 const selectedIds = Array.from(assignSelect.selectedOptions).map(opt => parseInt(opt.value));
-                // CORREÇÃO: Garante que o criador (dono) da tarefa editada continue vinculado
                 if (!selectedIds.includes(task.userId))
                     selectedIds.push(task.userId);
                 selectedIds.forEach(uid => assignmentService.assignUser(task.id, uid));
@@ -237,7 +235,6 @@ export function setupEventListeners() {
             if (deadlineInput.value)
                 deadlineService.setDeadline(novoId, new Date(deadlineInput.value));
             const selectedIds = Array.from(assignSelect.selectedOptions).map(opt => parseInt(opt.value));
-            // CORREÇÃO LÓGICA: Adiciona o criador à lista de atribuídos para aparecer no resumo dele
             if (!selectedIds.includes(selectedUserId)) {
                 selectedIds.push(selectedUserId);
             }
@@ -250,7 +247,7 @@ export function setupEventListeners() {
         renderTasks();
         renderUsers();
     });
-    // --- PESQUISA GLOBAL ---
+    // PESQUISA GLOBAL
     const globalSearchInput = document.getElementById("globalSearchInput");
     const performSearch = () => {
         const query = globalSearchInput.value.toLowerCase();
@@ -261,7 +258,7 @@ export function setupEventListeners() {
     document.getElementById("btnSearch")?.addEventListener("click", performSearch);
     globalSearchInput?.addEventListener("keypress", (e) => { if (e.key === 'Enter')
         performSearch(); });
-    // --- LIMPAR TAREFAS CONCLUÍDAS ---
+    // LIMPAR TAREFAS CONCLUÍDAS
     document.getElementById("btnClearCompleted")?.addEventListener("click", () => {
         if (!confirm("Remover tarefas concluídas?"))
             return;
@@ -270,7 +267,7 @@ export function setupEventListeners() {
         renderTasks();
         renderUsers();
     });
-    // --- ORDENAÇÃO DE TAREFAS ---
+    // ORDENAÇÃO DE TAREFAS
     document.getElementById("btnSort")?.addEventListener("click", (e) => {
         listTasks.sort((a, b) => {
             const ta = a.title.toLowerCase();
@@ -285,7 +282,7 @@ export function setupEventListeners() {
             btn.textContent = isAscending ? "Ordenar A-Z" : "Ordenar Z-A";
         renderTasks();
     });
-    // --- CONTROLE DE MODAIS ---
+    // CONTROLE DE MODAIS
     document.getElementById("openModalBtn")?.addEventListener("click", () => {
         if (selectedUserId === null)
             return showModal("Por favor, selecione um utilizador primeiro!");
