@@ -119,7 +119,7 @@ export function setupEventListeners() {
         }
     });
 
-    // --- ADICIONAR NOVO USUÁRIO ---
+    // ADICIONAR NOVO USUÁRIO
     document.getElementById("formAdd")?.addEventListener("submit", (e) => {
         e.preventDefault();
         const nameInput = document.getElementById("name") as HTMLInputElement;
@@ -158,7 +158,7 @@ export function setupEventListeners() {
         }
     });
 
-    // --- BUSCA RÁPIDA DE USUÁRIOS ---
+    // BUSCA RÁPIDA DE USUÁRIOS
     const searchInput = document.getElementById("searchInput") as HTMLInputElement;
     searchInput?.addEventListener("input", (e) => {
         const val = (e.target as HTMLInputElement).value.toLowerCase();
@@ -166,7 +166,7 @@ export function setupEventListeners() {
         renderUsers(filteredUsers);
     });
 
-    // --- FILTRO ATIVOS / INATIVOS ---
+    // FILTRO ATIVOS / INATIVOS
     let mostrandoAtivos = true;
     const btnFilterActive = document.getElementById("filterActive");
 
@@ -186,7 +186,7 @@ export function setupEventListeners() {
 
     document.getElementById("showAll")?.addEventListener("click", () => renderUsers(listUsers));
 
-    // --- ORDENAÇÃO DE USUÁRIOS ---
+    // ORDENAÇÃO DE USUÁRIOS
     let usersSortAscending = true;
     document.getElementById("sortName")?.addEventListener("click", (e) => {
         const sorted = [...listUsers].sort((a, b) => {
@@ -201,7 +201,7 @@ export function setupEventListeners() {
         renderUsers(sorted);
     });
 
-    // --- SALVAMENTO E EDIÇÃO DE TAREFAS ---
+    // SALVAMENTO E EDIÇÃO DE TAREFAS
     document.getElementById("btnSaveTask")?.addEventListener("click", () => {
         const editTaskIdElem = document.getElementById("editTaskId") as HTMLInputElement;
         const categoryElem = document.getElementById("categorySelect") as HTMLSelectElement;
@@ -228,11 +228,9 @@ export function setupEventListeners() {
                 priorityService.setPriority(task.id, Priority[prioridade]);
                 if (deadlineInput.value) deadlineService.setDeadline(task.id, new Date(deadlineInput.value));
                 
-                // Limpa e reassocia, garantindo o criador original se necessário
                 assignmentService.getUsersFromTask(task.id).forEach(uid => assignmentService.unassignUser(task.id, uid));
                 
                 const selectedIds = Array.from(assignSelect.selectedOptions).map(opt => parseInt(opt.value));
-                // CORREÇÃO: Garante que o criador (dono) da tarefa editada continue vinculado
                 if (!selectedIds.includes(task.userId)) selectedIds.push(task.userId);
                 
                 selectedIds.forEach(uid => assignmentService.assignUser(task.id, uid));
@@ -250,7 +248,6 @@ export function setupEventListeners() {
             
             const selectedIds = Array.from(assignSelect.selectedOptions).map(opt => parseInt(opt.value));
             
-            // CORREÇÃO LÓGICA: Adiciona o criador à lista de atribuídos para aparecer no resumo dele
             if (!selectedIds.includes(selectedUserId)) {
                 selectedIds.push(selectedUserId);
             }
@@ -267,7 +264,7 @@ export function setupEventListeners() {
         renderUsers();
     });
 
-    // --- PESQUISA GLOBAL ---
+    // PESQUISA GLOBAL
     const globalSearchInput = document.getElementById("globalSearchInput") as HTMLInputElement;
     const performSearch = () => {
         const query = globalSearchInput.value.toLowerCase();
@@ -280,7 +277,7 @@ export function setupEventListeners() {
     document.getElementById("btnSearch")?.addEventListener("click", performSearch);
     globalSearchInput?.addEventListener("keypress", (e) => { if(e.key === 'Enter') performSearch(); });
 
-    // --- LIMPAR TAREFAS CONCLUÍDAS ---
+    // LIMPAR TAREFAS CONCLUÍDAS
     document.getElementById("btnClearCompleted")?.addEventListener("click", () => {
         if (!confirm("Remover tarefas concluídas?")) return;
         const remaining = listTasks.filter(t => !t.completed);
@@ -289,7 +286,7 @@ export function setupEventListeners() {
         renderUsers();
     });
 
-    // --- ORDENAÇÃO DE TAREFAS ---
+    // ORDENAÇÃO DE TAREFAS
     document.getElementById("btnSort")?.addEventListener("click", (e) => {
         listTasks.sort((a, b) => {
             const ta = a.title.toLowerCase();
@@ -303,7 +300,7 @@ export function setupEventListeners() {
         renderTasks();
     });
 
-    // --- CONTROLE DE MODAIS ---
+    // CONTROLE DE MODAIS
     document.getElementById("openModalBtn")?.addEventListener("click", () => {
         if (selectedUserId === null) return showModal("Por favor, selecione um utilizador primeiro!");
         

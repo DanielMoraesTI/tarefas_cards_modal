@@ -9,27 +9,20 @@ import { assignmentService } from './AssignmentService.js';
 // Mantemos o let para compatibilidade, mas evitaremos reatribuir a referência
 export let listTasks: ITask[] = [];
 
-/**
- * Atualiza a lista de tarefas sem perder a referência original
- */
+// Atualiza a lista de tarefas sem perder a referência original
 export const setListTasks = (newList: ITask[]) => {
     listTasks.splice(0, listTasks.length, ...newList);
 };
 
-/**
- * Remove tarefas de um usuário e limpa referências em serviços auxiliares
- */
+//Remove tarefas de um usuário e limpa referências em serviços auxiliares
 export function removeTasksByUserId(userId: number): void {
-    // 1. Identifica as tarefas que serão removidas
+
     const tasksToRemove = listTasks.filter(t => t.userId === userId);
     
-    // 2. Limpa dados vinculados a essas tarefas em outros serviços
     tasksToRemove.forEach(task => {
-        priorityService.setPriority(task.id, Priority.LOW); // Opcional: ou deletar do service
-        // Se houver método de delete nos services auxiliares, chame-os aqui
+        priorityService.setPriority(task.id, Priority.LOW);
     });
 
-    // 3. Filtra a lista mantendo a referência
     const filtered = listTasks.filter(t => t.userId !== userId);
     setListTasks(filtered);
 }
@@ -50,7 +43,6 @@ export function createFakeTasksIfEmpty(): void {
     const t3 = new Task(1004, 5, 'Analisar prova documental do caso Z', 'Análise' as any, 'Penal' as any);
     (t3 as any).tag = 'documentos';
 
-    // Adiciona à lista
     listTasks.push(t1, t2, b1, t3);
 
     // Configurações de serviços auxiliares

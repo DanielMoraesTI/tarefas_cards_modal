@@ -31,12 +31,10 @@ export class UserClass extends BaseEntity {
         this.active = !this.active;
     }
 
-    // Método: acessado como user.getRole()
     public getRole(): UserRole {
         return this.role;
     }
 
-    // Método: acessado como user.getEmail()
     public getEmail(): string {
         return this._email;
     }

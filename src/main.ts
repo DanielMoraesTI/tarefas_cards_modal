@@ -13,29 +13,20 @@ import {
 } from './ui/index.js';
 import { ITask } from './tasks/ITask.js';
 
-/**
- * Inicializa os ouvintes de eventos antes de carregar os dados
- * para garantir que a UI responda assim que renderizada.
- */
 setupEventListeners();
 
-/**
- * Carga inicial de dados com callback de renderização
- */
+// Carga inicial de dados com callback de renderização
 loadInitialData(() => {
-    // Ordem lógica: Criar tarefas fakes -> Renderizar tudo -> Estatísticas
     createFakeTasksIfEmpty();
     renderUsers();
     renderTasks();
     updateExtendedStatistics();
 });
 
-// --- EXPOSIÇÃO GLOBAL ---
+// EXPOSIÇÃO GLOBAL
 // Necessária para chamadas diretas via strings no HTML ou onclicks legados
 
-/**
- * Abre o modal de detalhes do utilizador
- */
+// Abre o modal de detalhes do utilizador
 (window as any).abrirModalDetalhes = (user: any) => {
     const modalDetails = document.getElementById("userDetails");
     if (!modalDetails || !user) return;
@@ -48,11 +39,9 @@ loadInitialData(() => {
     const detailRole = document.getElementById("detailRole");
 
     if (detailName) detailName.textContent = user.name;
-    // Tenta usar o método getEmail/getRole da classe, senão usa a propriedade
     if (detailEmail) detailEmail.textContent = typeof user.getEmail === 'function' ? user.getEmail() : user.email;
     if (detailRole) detailRole.textContent = typeof user.getRole === 'function' ? user.getRole() : user.role;
 
-    // Lógica de exibição compatível com dialog ou div comum
     if (modalDetails instanceof HTMLDialogElement) {
         modalDetails.showModal();
     } else {
@@ -64,9 +53,7 @@ loadInitialData(() => {
     (window as any).refreshModalData = () => (window as any).abrirModalDetalhes(user);
 };
 
-/**
- * Lógica centralizada para abrir o modal de edição de tarefa
- */
+// Lógica centralizada para abrir o modal de edição de tarefa
 (window as any).openEditModal = (taskId: number) => {
     const task = (listTasks as ITask[]).find((t: ITask) => t.id === taskId);
     
@@ -81,7 +68,6 @@ loadInitialData(() => {
             editTaskIdElem.value = taskId.toString();
             newTaskInput.value = task.title;
 
-            // Sincroniza os usuários atribuídos no select multiple
             if (assignSelect) {
                 Array.from(assignSelect.options).forEach(opt => opt.selected = false);
                 const assignedIds = assignmentService.getUsersFromTask(taskId);
@@ -96,9 +82,7 @@ loadInitialData(() => {
     }
 };
 
-/**
- * Atalho global para abrir edição aceitando objeto ou ID
- */
+// Atalho global para abrir edição aceitando objeto ou ID
 (window as any).abrirModalEdicao = (taskOrId: any) => {
     if (!taskOrId) return;
     

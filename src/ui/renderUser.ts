@@ -16,14 +16,13 @@ const usersListUI = document.getElementById("usersList") as HTMLUListElement;
 const selectedUserNameUI = document.getElementById("selectedUserName") as HTMLSpanElement;
 const assignSelectUI = document.getElementById("assignSelect") as HTMLSelectElement;
 
-/**
- * Renderiza a lista de cartões de utilizadores e atualiza estatísticas
- */
+// Renderiza a lista de cartões de utilizadores e atualiza estatísticas
+
 export function renderUsers(arrayToRender: UserClass[] = listUsers): void {
     if (!usersListUI) return;
     usersListUI.innerHTML = "";
     
-    // --- CÁLCULO DE ESTATÍSTICAS ---
+    // CÁLCULO DE ESTATÍSTICAS
     const totalUsers = listUsers.length;
     const totalActive = listUsers.filter(u => u.isActive()).length;
     const activityPercentage = totalUsers > 0 ? Math.round((totalActive / totalUsers) * 100) : 0;
@@ -45,11 +44,10 @@ export function renderUsers(arrayToRender: UserClass[] = listUsers): void {
     renderAssignOptions();
     renderUserFilterOptions();
 
-    // --- RENDERIZAÇÃO DOS CARDS ---
+    // RENDERIZAÇÃO DOS CARDS
     arrayToRender.forEach(user => {
         const cardDiv = document.createElement("div");
         
-        // CORREÇÃO: Adicionando data-id e classe user-card para a Delegação de Eventos
         cardDiv.className = `user-card ${selectedUserId === user.getId ? 'selected' : ''}`;
         cardDiv.setAttribute("data-id", user.getId.toString());
         
@@ -74,19 +72,16 @@ export function renderUsers(arrayToRender: UserClass[] = listUsers): void {
             </div>
         `;
 
-        // Removido o cardDiv.onclick individual para não conflitar com a delegação de eventos
-        // que agora está centralizada no eventHandlers.ts
-
         // Botão de Alternar Status (Ativo/Inativo)
         cardDiv.querySelector(".btnToggle")?.addEventListener("click", (e) => {
-            e.stopPropagation(); // Impede que o clique no botão abra o modal de detalhes
+            e.stopPropagation();
             toggleUserStatus(user.getId);
             renderUsers();
         });
 
         // Botão de Remover Usuário
         cardDiv.querySelector(".btnRemoveUser")?.addEventListener("click", (e) => {
-            e.stopPropagation(); // Impede que o clique no botão abra o modal de detalhes
+            e.stopPropagation();
             if (confirm("Deseja eliminar este utilizador e as suas tarefas?")) {
                 removeUserLogic(user.getId);
                 removeTasksByUserId(user.getId);
