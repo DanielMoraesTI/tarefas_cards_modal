@@ -11,7 +11,6 @@ export function loadInitialData(renderCallback) {
         { id: 4, name: "Natalia", email: "natalia@gmail.com", active: true, role: UserRole.VIEWER },
         { id: 5, name: "Debora", email: "debora@gmail.com", active: true, role: UserRole.USER },
     ];
-    // Limpa a lista mantendo a mesma referência de memória
     listUsers.splice(0, listUsers.length);
     fakeData.forEach(data => {
         const newUser = new UserClass(data.id, data.name, data.email, data.role);

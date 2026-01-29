@@ -17,7 +17,6 @@ const selectedUserNameUI = document.getElementById("selectedUserName") as HTMLSp
 const assignSelectUI = document.getElementById("assignSelect") as HTMLSelectElement;
 
 // Renderiza a lista de cartões de utilizadores e atualiza estatísticas
-
 export function renderUsers(arrayToRender: UserClass[] = listUsers): void {
     if (!usersListUI) return;
     usersListUI.innerHTML = "";

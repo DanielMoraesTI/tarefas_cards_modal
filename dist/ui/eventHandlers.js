@@ -9,6 +9,7 @@ import { Priority } from '../tasks/Priority.js';
 import { assignmentService } from '../services/AssignmentService.js';
 import { SearchService } from "../services/SearchService.js";
 import { showModal, setUserSendoVisualizado, atualizarConteudoModal } from './modals.js';
+import { automationRulesService } from '../services/AutomationRulesService.js';
 let isAscending = true;
 export function setupEventListeners() {
     const newTaskInput = document.getElementById("newTask");
@@ -23,7 +24,7 @@ export function setupEventListeners() {
     const searchUserSelect = document.getElementById('search-user');
     const searchStatusSelect = document.getElementById('search-status');
     const userListContainer = document.getElementById("usersList");
-    // --- PESQUISA E FILTROS (SearchService) ---
+    // PESQUISA E FILTROS (SearchService)
     const handleSearchServiceFilter = () => {
         const title = document.getElementById('search-title')?.value.trim() || "";
         const userRaw = document.getElementById('search-user')?.value || "";
@@ -65,14 +66,13 @@ export function setupEventListeners() {
     searchTitleInput?.addEventListener('input', handleSearchServiceFilter);
     searchUserSelect?.addEventListener('change', handleSearchServiceFilter);
     searchStatusSelect?.addEventListener('change', handleSearchServiceFilter);
-    // --- SELEÇÃO DE USUÁRIO E DETALHES ---
+    // SELEÇÃO DE USUÁRIO E DETALHES
     userListContainer?.addEventListener("click", (e) => {
         const target = e.target;
         if (target.closest('button'))
             return;
         const card = target.closest(".user-card");
         if (card) {
-            // CORREÇÃO VISUAL: Sincroniza a marcação verde
             document.querySelectorAll('.user-card.selected').forEach(c => {
                 c.classList.remove('selected');
             });
@@ -221,6 +221,7 @@ export function setupEventListeners() {
                 if (!selectedIds.includes(task.userId))
                     selectedIds.push(task.userId);
                 selectedIds.forEach(uid => assignmentService.assignUser(task.id, uid));
+                automationRulesService.applyRules(task);
             }
         }
         else {
@@ -242,6 +243,7 @@ export function setupEventListeners() {
                 assignmentService.assignUser(novoId, uid);
             });
             listTasks.push(nova);
+            automationRulesService.applyRules(nova);
         }
         taskModal.close();
         renderTasks();
@@ -282,7 +284,7 @@ export function setupEventListeners() {
             btn.textContent = isAscending ? "Ordenar A-Z" : "Ordenar Z-A";
         renderTasks();
     });
-    // CONTROLE DE MODAIS
+    // CONTROLE DE MODAIS E GATILHOS DE ESTADO DE USUÁRIO
     document.getElementById("openModalBtn")?.addEventListener("click", () => {
         if (selectedUserId === null)
             return showModal("Por favor, selecione um utilizador primeiro!");
@@ -298,6 +300,18 @@ export function setupEventListeners() {
             `).join("");
         }
         taskModal.showModal();
+    });
+    modalDetails?.addEventListener("click", (e) => {
+        const target = e.target;
+        if (target.id === "btnChangeUserStatus") {
+            const userId = Number(target.getAttribute("data-id"));
+            const user = listUsers.find(u => u.getId === userId);
+            if (user) {
+                automationRulesService.applyUserRules(user);
+                renderUsers();
+                renderTasks();
+            }
+        }
     });
     window.abrirModalEdicao = (task) => {
         document.getElementById("editTaskId").value = task.id.toString();

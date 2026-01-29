@@ -19,6 +19,23 @@ export class AssignmentService {
             this.userToTasks.get(userId).delete(taskId);
         }
     }
+    /**
+     * Remove um usuário de todas as tarefas às quais ele está atribuído.
+     * Necessário para a automação de usuários inativos.
+     * @param userId
+     */
+    unassignUserFromAllTasks(userId) {
+        const associatedTasks = this.userToTasks.get(userId);
+        if (associatedTasks) {
+            associatedTasks.forEach(taskId => {
+                const usersInTask = this.taskToUsers.get(taskId);
+                if (usersInTask) {
+                    usersInTask.delete(userId);
+                }
+            });
+            this.userToTasks.delete(userId);
+        }
+    }
     getUsersFromTask(taskId) {
         const users = this.taskToUsers.get(taskId);
         return users ? Array.from(users) : [];

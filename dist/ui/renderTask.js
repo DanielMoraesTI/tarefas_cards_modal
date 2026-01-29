@@ -4,6 +4,7 @@ import { renderUsers } from './renderUser.js';
 import { TaskStatus } from '../tasks/TaskStatus.js';
 import { canDeleteTask, canEditTask } from '../security/permissions.js';
 import { Priority } from '../tasks/Priority.js';
+import { automationRulesService } from '../services/AutomationRulesService.js';
 const taskListUI = document.getElementById("taskList");
 const searchInput = document.getElementById("searchTask");
 const commentService = new CommentService();
@@ -36,6 +37,8 @@ export function renderTasks(arrayToRender, resetFilters = true) {
     const currentUser = listUsers.find(u => u.getId === selectedUserId);
     const userRole = currentUser ? currentUser.getRole() : null;
     let tasksToShow = arrayToRender || listTasks.filter(t => t.userId === selectedUserId || assignmentService.getUsersFromTask(t.id).includes(selectedUserId));
+    // AUTOMAÇÃO: Aplicar regras globais (como expiração) antes de renderizar
+    tasksToShow.forEach(task => automationRulesService.applyRules(task));
     const allTags = new Set();
     tasksToShow.forEach(t => tagService.getTags(t.id).forEach(tag => allTags.add(tag)));
     const filterContainer = document.createElement("div");
@@ -145,8 +148,10 @@ export function renderTasks(arrayToRender, resetFilters = true) {
                     </div>
                 </div>
             </div>`;
+        // EVENTOS DO BOTÃO CONCLUIR COM REGRAS AUTOMÁTICAS
         li.querySelector(".btnDone")?.addEventListener("click", () => {
             task.moveTo(task.completed ? TaskStatus.CREATED : TaskStatus.COMPLETED);
+            automationRulesService.applyRules(task);
             renderTasks(undefined, false);
             renderUsers();
         });

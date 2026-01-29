@@ -1,10 +1,22 @@
 import { Task } from '../models/task.js';
-import { listTasks, setListTasks, selectedUserId, listUsers, assignmentService, deadlineService, priorityService, CommentService, AttachmentService, TagService } from '../services/index.js';
+import { 
+    listTasks, 
+    setListTasks, 
+    selectedUserId, 
+    listUsers, 
+    assignmentService, 
+    deadlineService, 
+    priorityService, 
+    CommentService, 
+    AttachmentService, 
+    TagService 
+} from '../services/index.js';
 import { renderUsers } from './renderUser.js';
 import { TaskStatus } from '../tasks/TaskStatus.js';
 import { ITask } from '../tasks/ITask.js';
 import { canDeleteTask, canEditTask } from '../security/permissions.js';
 import { Priority } from '../tasks/Priority.js';
+import { automationRulesService } from '../services/AutomationRulesService.js';
 
 const taskListUI = document.getElementById("taskList") as HTMLUListElement;
 const searchInput = document.getElementById("searchTask") as HTMLInputElement;
@@ -44,6 +56,9 @@ export function renderTasks(arrayToRender?: ITask[], resetFilters: boolean = tru
     let tasksToShow = arrayToRender || listTasks.filter(t => 
         t.userId === selectedUserId || assignmentService.getUsersFromTask(t.id).includes(selectedUserId!)
     );
+
+    // AUTOMAÇÃO: Aplicar regras globais (como expiração) antes de renderizar
+    tasksToShow.forEach(task => automationRulesService.applyRules(task));
 
     const allTags = new Set<string>();
     tasksToShow.forEach(t => tagService.getTags(t.id).forEach(tag => allTags.add(tag)));
@@ -165,31 +180,43 @@ export function renderTasks(arrayToRender?: ITask[], resetFilters: boolean = tru
                 </div>
             </div>`;
 
+        // EVENTOS DO BOTÃO CONCLUIR COM REGRAS AUTOMÁTICAS
         li.querySelector(".btnDone")?.addEventListener("click", () => {
             task.moveTo(task.completed ? TaskStatus.CREATED : TaskStatus.COMPLETED);
-            renderTasks(undefined, false); renderUsers();
+            
+            automationRulesService.applyRules(task);
+            
+            renderTasks(undefined, false); 
+            renderUsers();
         });
+
         li.querySelector(".btnAddTag")?.addEventListener("click", () => {
             const val = (li.querySelector(".inputNewTag") as HTMLInputElement).value;
             if(val.trim()){ tagService.addTag(task.id, val.trim()); renderTasks(undefined, false); }
         });
+
         li.querySelector(".btnAddComment")?.addEventListener("click", () => {
             const val = (li.querySelector(".inputComment") as HTMLInputElement).value;
             if(val.trim()){ commentService.addComment(task.id, selectedUserId!, val.trim()); renderTasks(undefined, false); }
         });
+
         li.querySelectorAll(".btnDelComment").forEach(b => b.addEventListener("click", (e) => {
             const id = (e.currentTarget as HTMLElement).dataset.commId;
             if(confirm("Apagar nota?")) { commentService.removeComment(Number(id)); renderTasks(undefined, false); }
         }));
+
         li.querySelector(".btnAddAttachment")?.addEventListener("click", () => {
             const n = prompt("Nome do anexo:");
             if(n) { attachmentService.addAttachment(task.id, n, "1MB", "#"); renderTasks(undefined, false); }
         });
+
         li.querySelectorAll(".btnDelAttachment").forEach(b => b.addEventListener("click", (e) => {
             attachmentService.removeAttachment(Number((e.currentTarget as HTMLElement).dataset.attachId));
             renderTasks(undefined, false);
         }));
+
         li.querySelector(".btnEditTask")?.addEventListener("click", () => (window as any).abrirModalEdicao?.(task));
+
         li.querySelector(".btnRemoveTaskAction")?.addEventListener("click", () => {
             if(confirm("Remover tarefa?")) { setListTasks(listTasks.filter(t => t.id !== task.id)); renderTasks(); renderUsers(); }
         });

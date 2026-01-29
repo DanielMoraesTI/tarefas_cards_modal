@@ -12,12 +12,17 @@ export class UserClass extends BaseEntity {
         this.role = role;
         this.active = true;
     }
-    // Getter para name: acessado como user.name
     get name() {
         return this._name;
     }
+    get getId() {
+        return this.id;
+    }
     isActive() {
         return this.active;
+    }
+    setActive(status) {
+        this.active = status;
     }
     toggleActive() {
         this.active = !this.active;

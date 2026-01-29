@@ -15,7 +15,6 @@ export function loadInitialData(renderCallback: () => void): void {
         { id: 5, name: "Debora", email: "debora@gmail.com", active: true, role: UserRole.USER },
     ];
 
-    // Limpa a lista mantendo a mesma referência de memória
     listUsers.splice(0, listUsers.length); 
     
     fakeData.forEach(data => {

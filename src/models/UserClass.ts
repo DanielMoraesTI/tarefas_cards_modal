@@ -18,13 +18,20 @@ export class UserClass extends BaseEntity {
         this.active = true;
     }
 
-    // Getter para name: acessado como user.name
     public get name(): string {
         return this._name;
     }
 
+    public get getId(): number {
+        return this.id;
+    }
+
     public isActive(): boolean {
         return this.active;
+    }
+
+    public setActive(status: boolean): void {
+        this.active = status;
     }
 
     public toggleActive(): void {

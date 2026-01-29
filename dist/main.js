@@ -9,14 +9,12 @@ loadInitialData(() => {
     updateExtendedStatistics();
 });
 // EXPOSIÇÃO GLOBAL
-// Necessária para chamadas diretas via strings no HTML ou onclicks legados
 // Abre o modal de detalhes do utilizador
 window.abrirModalDetalhes = (user) => {
     const modalDetails = document.getElementById("userDetails");
     if (!modalDetails || !user)
         return;
     setUserSendoVisualizado(user);
-    // Preenchimento dos campos no DOM
     const detailName = document.getElementById("detailName");
     const detailEmail = document.getElementById("detailEmail");
     const detailRole = document.getElementById("detailRole");
@@ -33,7 +31,6 @@ window.abrirModalDetalhes = (user) => {
         modalDetails.classList.remove("details-overlay-hidden");
         modalDetails.style.display = "block";
     }
-    // Função de atualização rápida do modal se houver mudanças nos dados
     window.refreshModalData = () => window.abrirModalDetalhes(user);
 };
 // Lógica centralizada para abrir o modal de edição de tarefa
@@ -65,7 +62,6 @@ window.openEditModal = (taskId) => {
 window.abrirModalEdicao = (taskOrId) => {
     if (!taskOrId)
         return;
-    // Resolve o ID independentemente de vir um número, objeto Task ou UserClass
     const id = typeof taskOrId === 'number'
         ? taskOrId
         : (taskOrId.id ?? (typeof taskOrId.getId === 'function' ? taskOrId.getId : null));

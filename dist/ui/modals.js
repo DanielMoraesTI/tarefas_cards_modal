@@ -1,5 +1,7 @@
 import { listTasks } from '../services/index.js';
 import { assignmentService } from '../services/AssignmentService.js';
+import { automationRulesService } from '../services/AutomationRulesService.js';
+import { renderUsers, renderTasks } from './index.js';
 export let userSendoVisualizado = null;
 export const atualizarConteudoModal = (user) => {
     const detailsContent = document.getElementById("detailsContent");
@@ -22,13 +24,22 @@ export const atualizarConteudoModal = (user) => {
                 <p style="margin: 8px 0;"><strong style="color: #2c3e50;">Função:</strong> <span style="color: #e74c3c; font-weight: bold;">${user.getRole()}</span></p>
                 <p style="margin: 8px 0;"><strong style="color: #2c3e50;">Status:</strong> <span style="color: ${user.isActive() ? '#27ae60' : '#e74c3c'}; font-weight: bold;">${user.isActive() ? 'Ativo' : 'Inativo'}</span></p>
                 <p style="margin: 8px 0; font-size: 0.9rem;"><strong style="color: #7f8c8d;">Criado em:</strong> <span style="color: #95a5a6;">${dataCriacao}</span></p>
+                
+                <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+                    <button id="btnChangeUserStatus" data-id="${user.getId}" style="cursor: pointer; background: ${user.isActive() ? '#e74c3c' : '#27ae60'}; color: white; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; font-size: 0.8rem; width: 100%;">
+                        ${user.isActive() ? 'INATIVAR UTILIZADOR' : 'ATIVAR UTILIZADOR'}
+                    </button>
+                    ${user.isActive() ? '<p style="font-size: 0.65rem; color: #7f8c8d; margin-top: 5px; text-align: center;">*Inativar removerá todas as atribuições automaticamente.</p>' : ''}
+                </div>
             </div>
+
             <hr style="border: none; border-top: 2px solid #ecf0f1; margin: 15px 0;">
+            
             <div style="background: white; padding: 15px; border-radius: 8px; border-left: 5px solid #3498db;">
                 <p style="margin: 0 0 10px 0; font-weight: bold; color: #2c3e50;">📊 Resumo de Atividade:</p>
                 <ul style="list-style: none; padding: 0; margin: 0;">
                     <li style="padding: 6px 0; border-bottom: 1px solid #ecf0f1;">
-                        <span style="color: #7f8c8d;">Total de Tarefas (Dono + Colaborador):</span> 
+                        <span style="color: #7f8c8d;">Total de Tarefas:</span> 
                         <strong style="color: #2c3e50; float: right;">${tarefasDoUsuario.length}</strong>
                     </li>
                     <li style="padding: 6px 0; border-bottom: 1px solid #ecf0f1;">
@@ -43,6 +54,17 @@ export const atualizarConteudoModal = (user) => {
             </div>
         </div>
     `;
+    // Implementação da troca de status com gatilho de automação
+    document.getElementById("btnChangeUserStatus")?.addEventListener("click", () => {
+        const novoStatus = !user.isActive();
+        user.setActive(novoStatus);
+        if (!novoStatus) {
+            automationRulesService.applyUserRules(user);
+        }
+        atualizarConteudoModal(user);
+        renderUsers();
+        renderTasks();
+    });
 };
 export function showModal(message) {
     const errorModal = document.getElementById("errorModal");
