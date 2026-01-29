@@ -10,15 +10,10 @@ export class CommentService {
     getComments(taskId) {
         return this.comments.filter(c => c.taskId === taskId);
     }
-    /**
-     * Remove um comentário da lista.
-     * Alterado para 'removeComment' para coincidir com a chamada no renderTask.ts
-     */
     removeComment(commentId) {
         this.comments = this.comments.filter(c => c.id !== commentId);
         console.log(`Comentário ${commentId} removido com sucesso.`);
     }
-    // Mantive este caso queira usar em outros lugares do sistema
     deleteComment(commentId) {
         this.removeComment(commentId);
     }

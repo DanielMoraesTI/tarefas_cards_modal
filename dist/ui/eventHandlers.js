@@ -1,7 +1,6 @@
 import { UserClass, Task } from '../models/index.js';
 import { listUsers, listTasks, selectedUserId, setListTasks, setSelectedUserId } from '../services/index.js';
 import { renderUsers, renderTasks } from './index.js';
-import { showModal } from './modals.js';
 import { BugTask } from '../tasks/BugTask.js';
 import { auditLog } from '../utils/HistoryLog.js';
 import { deadlineService } from '../services/DeadlineService.js';
@@ -9,6 +8,7 @@ import { priorityService } from '../services/PriorityService.js';
 import { Priority } from '../tasks/Priority.js';
 import { assignmentService } from '../services/AssignmentService.js';
 import { SearchService } from "../services/SearchService.js";
+import { showModal, setUserSendoVisualizado, atualizarConteudoModal } from './modals.js';
 let isAscending = true;
 export function setupEventListeners() {
     const newTaskInput = document.getElementById("newTask");
@@ -22,20 +22,17 @@ export function setupEventListeners() {
     const searchTitleInput = document.getElementById('search-title');
     const searchUserSelect = document.getElementById('search-user');
     const searchStatusSelect = document.getElementById('search-status');
+    const userListContainer = document.getElementById("usersList");
+    // --- PESQUISA E FILTROS (SearchService) ---
     const handleSearchServiceFilter = () => {
         const title = document.getElementById('search-title')?.value.trim() || "";
         const userRaw = document.getElementById('search-user')?.value || "";
         let userIdFiltered = undefined;
         if (userRaw) {
             const num = Number(userRaw);
-            // Validar: ID deve ser número positivo e EXISTIR em listUsers
             const userExists = num > 0 && listUsers.some(u => u.getId === num);
             if (!Number.isNaN(num) && userExists) {
                 userIdFiltered = num;
-            }
-            else if (userRaw) {
-                // ID inválido, negativo ou não existe em usuários — ignorar filtro
-                userIdFiltered = undefined;
             }
         }
         const statusVal = document.getElementById('search-status')?.value !== ""
@@ -43,7 +40,6 @@ export function setupEventListeners() {
             : undefined;
         const query = { text: title, userId: userIdFiltered, status: statusVal };
         const filteredTasks = SearchService.globalSearch(listTasks, query);
-        // Atualiza o usuário selecionado exibido (não dispara renderTasks adicional automaticamente)
         if (userIdFiltered !== undefined) {
             setSelectedUserId(userIdFiltered);
             const selNameElem = document.getElementById("selectedUserName");
@@ -69,7 +65,39 @@ export function setupEventListeners() {
     searchTitleInput?.addEventListener('input', handleSearchServiceFilter);
     searchUserSelect?.addEventListener('change', handleSearchServiceFilter);
     searchStatusSelect?.addEventListener('change', handleSearchServiceFilter);
-    // --- GESTÃO DE USUÁRIOS ---
+    // --- SELEÇÃO DE USUÁRIO E DETALHES ---
+    userListContainer?.addEventListener("click", (e) => {
+        const target = e.target;
+        if (target.closest('button'))
+            return;
+        const card = target.closest(".user-card");
+        if (card) {
+            // CORREÇÃO VISUAL: Sincroniza a marcação verde
+            document.querySelectorAll('.user-card.selected').forEach(c => {
+                c.classList.remove('selected');
+            });
+            card.classList.add("selected");
+            const userId = Number(card.getAttribute("data-id"));
+            const user = listUsers.find(u => u.getId === userId);
+            if (user) {
+                setUserSendoVisualizado(user);
+                setSelectedUserId(userId);
+                const selNameElem = document.getElementById("selectedUserName");
+                const selIdDisplay = document.getElementById("selectedUserIdDisplay");
+                if (selNameElem)
+                    selNameElem.textContent = user.name;
+                if (selIdDisplay)
+                    selIdDisplay.textContent = userId.toString();
+                atualizarConteudoModal(user);
+                if (modalDetails) {
+                    modalDetails.classList.remove("details-overlay-hidden");
+                    modalDetails.style.display = "flex";
+                }
+                renderTasks();
+            }
+        }
+    });
+    // --- ADICIONAR NOVO USUÁRIO ---
     document.getElementById("formAdd")?.addEventListener("submit", (e) => {
         e.preventDefault();
         const nameInput = document.getElementById("name");
@@ -93,7 +121,7 @@ export function setupEventListeners() {
         }
         if (!emailRegex.test(emailValue)) {
             if (erroDisplay) {
-                erroDisplay.innerHTML = 'Introduza um endereço de e-mail válido (ex: nome@dominio.com)';
+                erroDisplay.innerHTML = 'Introduza um endereço de e-mail válido (ex: nome@domínio.com)';
                 erroDisplay.className = "erro";
             }
             emailInput.focus();
@@ -122,13 +150,14 @@ export function setupEventListeners() {
             }
         }
     });
+    // --- BUSCA RÁPIDA DE USUÁRIOS ---
     const searchInput = document.getElementById("searchInput");
     searchInput?.addEventListener("input", (e) => {
         const val = e.target.value.toLowerCase();
         const filteredUsers = listUsers.filter(u => u.name.toLowerCase().includes(val));
         renderUsers(filteredUsers);
     });
-    // Variável de controle de estado
+    // --- FILTRO ATIVOS / INATIVOS ---
     let mostrandoAtivos = true;
     const btnFilterActive = document.getElementById("filterActive");
     btnFilterActive?.addEventListener("click", () => {
@@ -146,7 +175,7 @@ export function setupEventListeners() {
         }
     });
     document.getElementById("showAll")?.addEventListener("click", () => renderUsers(listUsers));
-    // --- ORDENAR USUÁRIOS POR NOME ---
+    // --- ORDENAÇÃO DE USUÁRIOS ---
     let usersSortAscending = true;
     document.getElementById("sortName")?.addEventListener("click", (e) => {
         const sorted = [...listUsers].sort((a, b) => {
@@ -162,7 +191,7 @@ export function setupEventListeners() {
             btn.textContent = usersSortAscending ? "Nome A-Z" : "Nome Z-A";
         renderUsers(sorted);
     });
-    // --- SALVAMENTO DE TAREFA (TAGS E PRIORIDADE) ---
+    // --- SALVAMENTO E EDIÇÃO DE TAREFAS ---
     document.getElementById("btnSaveTask")?.addEventListener("click", () => {
         const editTaskIdElem = document.getElementById("editTaskId");
         const categoryElem = document.getElementById("categorySelect");
@@ -187,8 +216,13 @@ export function setupEventListeners() {
                 priorityService.setPriority(task.id, Priority[prioridade]);
                 if (deadlineInput.value)
                     deadlineService.setDeadline(task.id, new Date(deadlineInput.value));
+                // Limpa e reassocia, garantindo o criador original se necessário
                 assignmentService.getUsersFromTask(task.id).forEach(uid => assignmentService.unassignUser(task.id, uid));
-                Array.from(assignSelect.selectedOptions).forEach(opt => assignmentService.assignUser(task.id, parseInt(opt.value)));
+                const selectedIds = Array.from(assignSelect.selectedOptions).map(opt => parseInt(opt.value));
+                // CORREÇÃO: Garante que o criador (dono) da tarefa editada continue vinculado
+                if (!selectedIds.includes(task.userId))
+                    selectedIds.push(task.userId);
+                selectedIds.forEach(uid => assignmentService.assignUser(task.id, uid));
             }
         }
         else {
@@ -202,8 +236,13 @@ export function setupEventListeners() {
             priorityService.setPriority(novoId, Priority[prioridade]);
             if (deadlineInput.value)
                 deadlineService.setDeadline(novoId, new Date(deadlineInput.value));
-            Array.from(assignSelect.selectedOptions).forEach(opt => {
-                assignmentService.assignUser(novoId, parseInt(opt.value));
+            const selectedIds = Array.from(assignSelect.selectedOptions).map(opt => parseInt(opt.value));
+            // CORREÇÃO LÓGICA: Adiciona o criador à lista de atribuídos para aparecer no resumo dele
+            if (!selectedIds.includes(selectedUserId)) {
+                selectedIds.push(selectedUserId);
+            }
+            selectedIds.forEach(uid => {
+                assignmentService.assignUser(novoId, uid);
             });
             listTasks.push(nova);
         }
@@ -222,7 +261,7 @@ export function setupEventListeners() {
     document.getElementById("btnSearch")?.addEventListener("click", performSearch);
     globalSearchInput?.addEventListener("keypress", (e) => { if (e.key === 'Enter')
         performSearch(); });
-    // --- Botões: Limpar Concluídas e Ordenar ---
+    // --- LIMPAR TAREFAS CONCLUÍDAS ---
     document.getElementById("btnClearCompleted")?.addEventListener("click", () => {
         if (!confirm("Remover tarefas concluídas?"))
             return;
@@ -231,6 +270,7 @@ export function setupEventListeners() {
         renderTasks();
         renderUsers();
     });
+    // --- ORDENAÇÃO DE TAREFAS ---
     document.getElementById("btnSort")?.addEventListener("click", (e) => {
         listTasks.sort((a, b) => {
             const ta = a.title.toLowerCase();
@@ -245,7 +285,7 @@ export function setupEventListeners() {
             btn.textContent = isAscending ? "Ordenar A-Z" : "Ordenar Z-A";
         renderTasks();
     });
-    // --- ABRIR MODAL: FILTRAR DONO DA LISTA ---
+    // --- CONTROLE DE MODAIS ---
     document.getElementById("openModalBtn")?.addEventListener("click", () => {
         if (selectedUserId === null)
             return showModal("Por favor, selecione um utilizador primeiro!");

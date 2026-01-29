@@ -15,11 +15,14 @@ export function loadInitialData(renderCallback: () => void): void {
         { id: 5, name: "Debora", email: "debora@gmail.com", active: true, role: UserRole.USER },
     ];
 
-    listUsers.length = 0; 
+    // Limpa a lista mantendo a mesma referência de memória
+    listUsers.splice(0, listUsers.length); 
     
     fakeData.forEach(data => {
         const newUser = new UserClass(data.id, data.name, data.email, data.role);
         
+        // Se na carga inicial ele deve ser inativo, chamamos o toggle
+        // Já que por padrão o constructor define active como true
         if (!data.active) {
             newUser.toggleActive();
         }
@@ -31,14 +34,21 @@ export function loadInitialData(renderCallback: () => void): void {
 }
 
 export function toggleUserStatus(id: number): void {
-    const user = listUsers.find(u => (u as any).id === id || (u as any).getId === id);
+    // Correção: Usando o método oficial getId() da sua UserClass
+    const user = listUsers.find(u => u.getId === id);
     if (user) {
         user.toggleActive();
     }
 }
 
 export function removeUserLogic(id: number): void {
-    listUsers = listUsers.filter(u => (u as any).id !== id && (u as any).getId !== id);
+    // Correção de Referência: 
+    // Em vez de 'listUsers = filter', buscamos o índice e removemos.
+    // Isso garante que todos os arquivos que importam listUsers vejam a mudança.
+    const index = listUsers.findIndex(u => u.getId === id);
+    if (index !== -1) {
+        listUsers.splice(index, 1);
+    }
 }
 
 

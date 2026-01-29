@@ -9,7 +9,6 @@ import {
     setSelectedUserId 
 } from '../services/index.js';
 import { renderUsers, renderTasks } from './index.js';
-import { showModal, setUserSendoVisualizado } from './modals.js';
 import { BugTask } from '../tasks/BugTask.js';
 import { ITask } from '../tasks/ITask.js';
 import { auditLog } from '../utils/HistoryLog.js';
@@ -20,6 +19,7 @@ import { Priority } from '../tasks/Priority.js';
 import { assignmentService } from '../services/AssignmentService.js';
 import { TaskStatus } from '../tasks/TaskStatus.js';
 import { SearchService } from "../services/SearchService.js";
+import { showModal, setUserSendoVisualizado, atualizarConteudoModal } from './modals.js';
 
 let isAscending = true;
 
@@ -35,7 +35,9 @@ export function setupEventListeners() {
     const searchTitleInput = document.getElementById('search-title') as HTMLInputElement;
     const searchUserSelect = document.getElementById('search-user') as HTMLSelectElement;
     const searchStatusSelect = document.getElementById('search-status') as HTMLSelectElement;
+    const userListContainer = document.getElementById("usersList");
 
+    // --- PESQUISA E FILTROS (SearchService) ---
     const handleSearchServiceFilter = () => {
         const title = (document.getElementById('search-title') as HTMLInputElement)?.value.trim() || "";
         const userRaw = (document.getElementById('search-user') as HTMLSelectElement)?.value || "";
@@ -46,8 +48,6 @@ export function setupEventListeners() {
             const userExists = num > 0 && listUsers.some(u => u.getId === num);
             if (!Number.isNaN(num) && userExists) {
                 userIdFiltered = num;
-            } else if (userRaw) {
-                userIdFiltered = undefined;
             }
         }
 
@@ -56,7 +56,6 @@ export function setupEventListeners() {
             : undefined;
 
         const query = { text: title, userId: userIdFiltered, status: statusVal };
-
         const filteredTasks = SearchService.globalSearch(listTasks, query);
 
         if (userIdFiltered !== undefined) {
@@ -82,7 +81,45 @@ export function setupEventListeners() {
     searchUserSelect?.addEventListener('change', handleSearchServiceFilter);
     searchStatusSelect?.addEventListener('change', handleSearchServiceFilter);
 
-    // --- GESTÃO DE USUÁRIOS ---
+    // --- SELEÇÃO DE USUÁRIO E DETALHES ---
+    userListContainer?.addEventListener("click", (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('button')) return;
+
+        const card = target.closest(".user-card"); 
+
+        if (card) {
+            // CORREÇÃO VISUAL: Sincroniza a marcação verde
+            document.querySelectorAll('.user-card.selected').forEach(c => {
+                c.classList.remove('selected');
+            });
+            card.classList.add("selected");
+
+            const userId = Number(card.getAttribute("data-id"));
+            const user = listUsers.find(u => u.getId === userId);
+
+            if (user) {
+                setUserSendoVisualizado(user);
+                setSelectedUserId(userId);
+
+                const selNameElem = document.getElementById("selectedUserName");
+                const selIdDisplay = document.getElementById("selectedUserIdDisplay");
+                if (selNameElem) selNameElem.textContent = user.name;
+                if (selIdDisplay) selIdDisplay.textContent = userId.toString();
+
+                atualizarConteudoModal(user);
+
+                if (modalDetails) {
+                    modalDetails.classList.remove("details-overlay-hidden");
+                    modalDetails.style.display = "flex"; 
+                }
+                
+                renderTasks(); 
+            }
+        }
+    });
+
+    // --- ADICIONAR NOVO USUÁRIO ---
     document.getElementById("formAdd")?.addEventListener("submit", (e) => {
         e.preventDefault();
         const nameInput = document.getElementById("name") as HTMLInputElement;
@@ -101,7 +138,7 @@ export function setupEventListeners() {
             nameInput.focus(); return;
         }
         if (!emailRegex.test(emailValue)) {
-            if (erroDisplay) { erroDisplay.innerHTML = 'Introduza um endereço de e-mail válido (ex: nome@dominio.com)'; erroDisplay.className = "erro"; }
+            if (erroDisplay) { erroDisplay.innerHTML = 'Introduza um endereço de e-mail válido (ex: nome@domínio.com)'; erroDisplay.className = "erro"; }
             emailInput.focus(); return;
         }
         if (!roleValue) {
@@ -121,6 +158,7 @@ export function setupEventListeners() {
         }
     });
 
+    // --- BUSCA RÁPIDA DE USUÁRIOS ---
     const searchInput = document.getElementById("searchInput") as HTMLInputElement;
     searchInput?.addEventListener("input", (e) => {
         const val = (e.target as HTMLInputElement).value.toLowerCase();
@@ -128,33 +166,27 @@ export function setupEventListeners() {
         renderUsers(filteredUsers);
     });
 
-    // Variável de controle de estado
+    // --- FILTRO ATIVOS / INATIVOS ---
     let mostrandoAtivos = true;
-
     const btnFilterActive = document.getElementById("filterActive");
 
     btnFilterActive?.addEventListener("click", () => {
         if (mostrandoAtivos) {
             const inativos = listUsers.filter(u => !u.isActive());
             renderUsers(inativos);
-            
             btnFilterActive.innerText = "Ativos";
-            
             mostrandoAtivos = false;
         } else {
             const ativos = listUsers.filter(u => u.isActive());
             renderUsers(ativos);
-            
             btnFilterActive.innerText = "Inativos";
-
-            
             mostrandoAtivos = true;
         }
     });
 
     document.getElementById("showAll")?.addEventListener("click", () => renderUsers(listUsers));
 
-    // --- ORDENAR USUÁRIOS POR NOME ---
+    // --- ORDENAÇÃO DE USUÁRIOS ---
     let usersSortAscending = true;
     document.getElementById("sortName")?.addEventListener("click", (e) => {
         const sorted = [...listUsers].sort((a, b) => {
@@ -169,7 +201,7 @@ export function setupEventListeners() {
         renderUsers(sorted);
     });
 
-    // --- SALVAMENTO DE TAREFA (TAGS E PRIORIDADE) ---
+    // --- SALVAMENTO E EDIÇÃO DE TAREFAS ---
     document.getElementById("btnSaveTask")?.addEventListener("click", () => {
         const editTaskIdElem = document.getElementById("editTaskId") as HTMLInputElement;
         const categoryElem = document.getElementById("categorySelect") as HTMLSelectElement;
@@ -196,8 +228,14 @@ export function setupEventListeners() {
                 priorityService.setPriority(task.id, Priority[prioridade]);
                 if (deadlineInput.value) deadlineService.setDeadline(task.id, new Date(deadlineInput.value));
                 
+                // Limpa e reassocia, garantindo o criador original se necessário
                 assignmentService.getUsersFromTask(task.id).forEach(uid => assignmentService.unassignUser(task.id, uid));
-                Array.from(assignSelect.selectedOptions).forEach(opt => assignmentService.assignUser(task.id, parseInt(opt.value)));
+                
+                const selectedIds = Array.from(assignSelect.selectedOptions).map(opt => parseInt(opt.value));
+                // CORREÇÃO: Garante que o criador (dono) da tarefa editada continue vinculado
+                if (!selectedIds.includes(task.userId)) selectedIds.push(task.userId);
+                
+                selectedIds.forEach(uid => assignmentService.assignUser(task.id, uid));
             }
         } else {
             if (selectedUserId === null) return showModal("Selecione um utilizador primeiro.");
@@ -210,8 +248,15 @@ export function setupEventListeners() {
             priorityService.setPriority(novoId, Priority[prioridade]);
             if (deadlineInput.value) deadlineService.setDeadline(novoId, new Date(deadlineInput.value));
             
-            Array.from(assignSelect.selectedOptions).forEach(opt => {
-                assignmentService.assignUser(novoId, parseInt(opt.value));
+            const selectedIds = Array.from(assignSelect.selectedOptions).map(opt => parseInt(opt.value));
+            
+            // CORREÇÃO LÓGICA: Adiciona o criador à lista de atribuídos para aparecer no resumo dele
+            if (!selectedIds.includes(selectedUserId)) {
+                selectedIds.push(selectedUserId);
+            }
+
+            selectedIds.forEach(uid => {
+                assignmentService.assignUser(novoId, uid);
             });
 
             listTasks.push(nova);
@@ -235,7 +280,7 @@ export function setupEventListeners() {
     document.getElementById("btnSearch")?.addEventListener("click", performSearch);
     globalSearchInput?.addEventListener("keypress", (e) => { if(e.key === 'Enter') performSearch(); });
 
-    // --- Botões: Limpar Concluídas e Ordenar ---
+    // --- LIMPAR TAREFAS CONCLUÍDAS ---
     document.getElementById("btnClearCompleted")?.addEventListener("click", () => {
         if (!confirm("Remover tarefas concluídas?")) return;
         const remaining = listTasks.filter(t => !t.completed);
@@ -244,6 +289,7 @@ export function setupEventListeners() {
         renderUsers();
     });
 
+    // --- ORDENAÇÃO DE TAREFAS ---
     document.getElementById("btnSort")?.addEventListener("click", (e) => {
         listTasks.sort((a, b) => {
             const ta = a.title.toLowerCase();
@@ -257,7 +303,7 @@ export function setupEventListeners() {
         renderTasks();
     });
 
-    // --- ABRIR MODAL: FILTRAR DONO DA LISTA ---
+    // --- CONTROLE DE MODAIS ---
     document.getElementById("openModalBtn")?.addEventListener("click", () => {
         if (selectedUserId === null) return showModal("Por favor, selecione um utilizador primeiro!");
         

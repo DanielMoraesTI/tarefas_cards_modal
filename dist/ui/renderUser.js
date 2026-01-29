@@ -11,6 +11,7 @@ export function renderUsers(arrayToRender = listUsers) {
     if (!usersListUI)
         return;
     usersListUI.innerHTML = "";
+    // --- CÁLCULO DE ESTATÍSTICAS ---
     const totalUsers = listUsers.length;
     const totalActive = listUsers.filter(u => u.isActive()).length;
     const activityPercentage = totalUsers > 0 ? Math.round((totalActive / totalUsers) * 100) : 0;
@@ -36,7 +37,9 @@ export function renderUsers(arrayToRender = listUsers) {
     // --- RENDERIZAÇÃO DOS CARDS ---
     arrayToRender.forEach(user => {
         const cardDiv = document.createElement("div");
+        // CORREÇÃO: Adicionando data-id e classe user-card para a Delegação de Eventos
         cardDiv.className = `user-card ${selectedUserId === user.getId ? 'selected' : ''}`;
+        cardDiv.setAttribute("data-id", user.getId.toString());
         const countTasks = listTasks.filter(t => {
             const isOwner = t.userId === user.getId;
             const isAssigned = assignmentService.getUsersFromTask(t.id).includes(user.getId);
@@ -56,22 +59,17 @@ export function renderUsers(arrayToRender = listUsers) {
                 <button class="btnRemoveUser" data-id="${user.getId}">Remover</button>
             </div>
         `;
-        cardDiv.onclick = (e) => {
-            const target = e.target;
-            if (target.tagName !== 'BUTTON') {
-                setSelectedUserId(user.getId);
-                selectUser(user.getId);
-                if (window.abrirModalDetalhes)
-                    window.abrirModalDetalhes(user);
-            }
-        };
+        // Removido o cardDiv.onclick individual para não conflitar com a delegação de eventos
+        // que agora está centralizada no eventHandlers.ts
+        // Botão de Alternar Status (Ativo/Inativo)
         cardDiv.querySelector(".btnToggle")?.addEventListener("click", (e) => {
-            e.stopPropagation();
+            e.stopPropagation(); // Impede que o clique no botão abra o modal de detalhes
             toggleUserStatus(user.getId);
             renderUsers();
         });
+        // Botão de Remover Usuário
         cardDiv.querySelector(".btnRemoveUser")?.addEventListener("click", (e) => {
-            e.stopPropagation();
+            e.stopPropagation(); // Impede que o clique no botão abra o modal de detalhes
             if (confirm("Deseja eliminar este utilizador e as suas tarefas?")) {
                 removeUserLogic(user.getId);
                 removeTasksByUserId(user.getId);
@@ -164,5 +162,10 @@ export function renderUserFilterOptions() {
     if (!sel)
         return;
     const current = sel.value;
-    sel.innerHTML = '<option value="">Todos</option>' + listUsers.map(u => `\n        <option value="${u.getId}" ${current === String(u.getId) ? 'selected' : ''}>${u.name} (${u.isActive() ? 'Ativo' : 'Inativo'})</option>\n    `).join('');
+    sel.innerHTML = '<option value="">Todos</option>' +
+        listUsers.map(u => `
+            <option value="${u.getId}" ${current === String(u.getId) ? 'selected' : ''}>
+                ${u.name} (${u.isActive() ? 'Ativo' : 'Inativo'})
+            </option>
+        `).join('');
 }

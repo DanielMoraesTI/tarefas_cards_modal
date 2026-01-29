@@ -12,6 +12,7 @@ export class UserClass extends BaseEntity {
         this.role = role;
         this.active = true;
     }
+    // Getter para name: acessado como user.name
     get name() {
         return this._name;
     }
@@ -21,9 +22,11 @@ export class UserClass extends BaseEntity {
     toggleActive() {
         this.active = !this.active;
     }
+    // Método: acessado como user.getRole()
     getRole() {
         return this.role;
     }
+    // Método: acessado como user.getEmail()
     getEmail() {
         return this._email;
     }
