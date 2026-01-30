@@ -9,10 +9,12 @@ import {
     renderTasks, 
     setupEventListeners, 
     setUserSendoVisualizado, 
-    updateExtendedStatistics 
+    updateExtendedStatistics,
+    renderDashboard // <--- Importação adicionada
 } from './ui/index.js';
 import { ITask } from './tasks/ITask.js';
 
+// Inicializa os ouvintes de eventos globais
 setupEventListeners();
 
 // Carga inicial de dados com callback de renderização
@@ -21,6 +23,7 @@ loadInitialData(() => {
     renderUsers();
     renderTasks();
     updateExtendedStatistics();
+    renderDashboard(); // <--- Chamada adicionada para renderizar os contadores no topo ao carregar
 });
 
 // EXPOSIÇÃO GLOBAL
@@ -59,7 +62,6 @@ loadInitialData(() => {
         const newTaskInput = document.getElementById("newTask") as HTMLTextAreaElement;
         const taskModal = document.getElementById("taskModal") as HTMLDialogElement;
         const assignSelect = document.getElementById("assignSelect") as HTMLSelectElement;
-        const prioritySelect = document.getElementById("prioritySelect") as HTMLSelectElement;
 
         if (editTaskIdElem && newTaskInput && taskModal) {
             editTaskIdElem.value = taskId.toString();
@@ -96,3 +98,4 @@ loadInitialData(() => {
 (window as any).renderUsers = renderUsers;
 (window as any).renderTasks = renderTasks;
 (window as any).updateStats = updateExtendedStatistics;
+(window as any).renderDashboard = renderDashboard; // <--- Exposição global para garantir acesso

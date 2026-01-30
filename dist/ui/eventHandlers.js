@@ -1,8 +1,8 @@
 import { UserClass, Task } from '../models/index.js';
 import { listUsers, listTasks, selectedUserId, setListTasks, setSelectedUserId } from '../services/index.js';
-import { renderUsers, renderTasks } from './index.js';
+import { renderUsers, renderTasks, renderDashboard } from './index.js';
 import { BugTask } from '../tasks/BugTask.js';
-import { auditLog } from '../utils/HistoryLog.js';
+import { SystemLogger } from '../logs/SystemLogger.js';
 import { deadlineService } from '../services/DeadlineService.js';
 import { priorityService } from '../services/PriorityService.js';
 import { Priority } from '../tasks/Priority.js';
@@ -10,6 +10,7 @@ import { assignmentService } from '../services/AssignmentService.js';
 import { SearchService } from "../services/SearchService.js";
 import { showModal, setUserSendoVisualizado, atualizarConteudoModal } from './modals.js';
 import { automationRulesService } from '../services/AutomationRulesService.js';
+import { BusinessRules } from '../services/BusinessRules.js';
 let isAscending = true;
 export function setupEventListeners() {
     const newTaskInput = document.getElementById("newTask");
@@ -141,7 +142,8 @@ export function setupEventListeners() {
             listUsers.push(newUser);
             renderUsers(listUsers);
             e.target.reset();
-            auditLog.addLog(`USUÁRIO ADICIONADO: ${nameValue}`);
+            SystemLogger.log(`USUÁRIO ADICIONADO: ${nameValue}`);
+            renderDashboard(); // <--- ATUALIZAÇÃO
         }
         catch (error) {
             if (erroDisplay) {
@@ -149,47 +151,6 @@ export function setupEventListeners() {
                 erroDisplay.className = "erro";
             }
         }
-    });
-    // BUSCA RÁPIDA DE USUÁRIOS
-    const searchInput = document.getElementById("searchInput");
-    searchInput?.addEventListener("input", (e) => {
-        const val = e.target.value.toLowerCase();
-        const filteredUsers = listUsers.filter(u => u.name.toLowerCase().includes(val));
-        renderUsers(filteredUsers);
-    });
-    // FILTRO ATIVOS / INATIVOS
-    let mostrandoAtivos = true;
-    const btnFilterActive = document.getElementById("filterActive");
-    btnFilterActive?.addEventListener("click", () => {
-        if (mostrandoAtivos) {
-            const inativos = listUsers.filter(u => !u.isActive());
-            renderUsers(inativos);
-            btnFilterActive.innerText = "Ativos";
-            mostrandoAtivos = false;
-        }
-        else {
-            const ativos = listUsers.filter(u => u.isActive());
-            renderUsers(ativos);
-            btnFilterActive.innerText = "Inativos";
-            mostrandoAtivos = true;
-        }
-    });
-    document.getElementById("showAll")?.addEventListener("click", () => renderUsers(listUsers));
-    // ORDENAÇÃO DE USUÁRIOS
-    let usersSortAscending = true;
-    document.getElementById("sortName")?.addEventListener("click", (e) => {
-        const sorted = [...listUsers].sort((a, b) => {
-            const nameA = a.name.toLowerCase();
-            const nameB = b.name.toLowerCase();
-            if (nameA === nameB)
-                return 0;
-            return usersSortAscending ? (nameA < nameB ? -1 : 1) : (nameA > nameB ? -1 : 1);
-        });
-        usersSortAscending = !usersSortAscending;
-        const btn = e.currentTarget;
-        if (btn)
-            btn.textContent = usersSortAscending ? "Nome A-Z" : "Nome Z-A";
-        renderUsers(sorted);
     });
     // SALVAMENTO E EDIÇÃO DE TAREFAS
     document.getElementById("btnSaveTask")?.addEventListener("click", () => {
@@ -201,8 +162,9 @@ export function setupEventListeners() {
         const titulo = newTaskInput.value.trim();
         const tagValue = tagInput?.value.trim() || "";
         const prioridade = prioritySelect.value;
-        if (titulo.length <= 3)
-            return showModal("A descrição deve ter mais de 3 caracteres.");
+        if (!BusinessRules.isValidTitle(titulo)) {
+            return showModal("A descrição deve ter pelo menos 3 caracteres.");
+        }
         if (taskIdStr) {
             const idToEdit = parseInt(taskIdStr);
             const task = listTasks.find(t => t.id === idToEdit);
@@ -229,27 +191,66 @@ export function setupEventListeners() {
                 return showModal("Selecione um utilizador primeiro.");
             const novoId = Date.now();
             const nova = (taskTypeElem.value === "bug")
-                ? new BugTask(novoId, titulo, selectedUserId)
-                : new Task(novoId, selectedUserId, titulo, categoryElem.value, subjectElem.value);
+                ? new BugTask(titulo, selectedUserId, novoId)
+                : new Task(titulo, selectedUserId, categoryElem.value, subjectElem.value, novoId);
             nova.tag = tagValue;
-            priorityService.setPriority(novoId, Priority[prioridade]);
+            priorityService.setPriority(nova.id, Priority[prioridade]);
             if (deadlineInput.value)
-                deadlineService.setDeadline(novoId, new Date(deadlineInput.value));
+                deadlineService.setDeadline(nova.id, new Date(deadlineInput.value));
             const selectedIds = Array.from(assignSelect.selectedOptions).map(opt => parseInt(opt.value));
-            if (!selectedIds.includes(selectedUserId)) {
+            if (!selectedIds.includes(selectedUserId))
                 selectedIds.push(selectedUserId);
-            }
             selectedIds.forEach(uid => {
-                assignmentService.assignUser(novoId, uid);
+                assignmentService.assignUser(nova.id, uid);
             });
             listTasks.push(nova);
             automationRulesService.applyRules(nova);
+            SystemLogger.log(`[UI] Nova tarefa criada: ${titulo}`);
         }
         taskModal.close();
         renderTasks();
         renderUsers();
+        renderDashboard(); // <--- ATUALIZAÇÃO FUNDAMENTAL
     });
-    // PESQUISA GLOBAL
+    // BUSCA RÁPIDA DE USUÁRIOS
+    const searchInput = document.getElementById("searchInput");
+    searchInput?.addEventListener("input", (e) => {
+        const val = e.target.value.toLowerCase();
+        const filteredUsers = listUsers.filter(u => u.name.toLowerCase().includes(val));
+        renderUsers(filteredUsers);
+    });
+    let mostrandoAtivos = true;
+    const btnFilterActive = document.getElementById("filterActive");
+    btnFilterActive?.addEventListener("click", () => {
+        if (mostrandoAtivos) {
+            const inativos = listUsers.filter(u => !u.isActive());
+            renderUsers(inativos);
+            btnFilterActive.innerText = "Ativos";
+            mostrandoAtivos = false;
+        }
+        else {
+            const ativos = listUsers.filter(u => u.isActive());
+            renderUsers(ativos);
+            btnFilterActive.innerText = "Inativos";
+            mostrandoAtivos = true;
+        }
+    });
+    document.getElementById("showAll")?.addEventListener("click", () => renderUsers(listUsers));
+    let usersSortAscending = true;
+    document.getElementById("sortName")?.addEventListener("click", (e) => {
+        const sorted = [...listUsers].sort((a, b) => {
+            const nameA = a.name.toLowerCase();
+            const nameB = b.name.toLowerCase();
+            if (nameA === nameB)
+                return 0;
+            return usersSortAscending ? (nameA < nameB ? -1 : 1) : (nameA > nameB ? -1 : 1);
+        });
+        usersSortAscending = !usersSortAscending;
+        const btn = e.currentTarget;
+        if (btn)
+            btn.textContent = usersSortAscending ? "Nome A-Z" : "Nome Z-A";
+        renderUsers(sorted);
+    });
     const globalSearchInput = document.getElementById("globalSearchInput");
     const performSearch = () => {
         const query = globalSearchInput.value.toLowerCase();
@@ -260,7 +261,6 @@ export function setupEventListeners() {
     document.getElementById("btnSearch")?.addEventListener("click", performSearch);
     globalSearchInput?.addEventListener("keypress", (e) => { if (e.key === 'Enter')
         performSearch(); });
-    // LIMPAR TAREFAS CONCLUÍDAS
     document.getElementById("btnClearCompleted")?.addEventListener("click", () => {
         if (!confirm("Remover tarefas concluídas?"))
             return;
@@ -268,8 +268,8 @@ export function setupEventListeners() {
         setListTasks(remaining);
         renderTasks();
         renderUsers();
+        renderDashboard(); // <--- ATUALIZAÇÃO FUNDAMENTAL
     });
-    // ORDENAÇÃO DE TAREFAS
     document.getElementById("btnSort")?.addEventListener("click", (e) => {
         listTasks.sort((a, b) => {
             const ta = a.title.toLowerCase();
@@ -284,7 +284,6 @@ export function setupEventListeners() {
             btn.textContent = isAscending ? "Ordenar A-Z" : "Ordenar Z-A";
         renderTasks();
     });
-    // CONTROLE DE MODAIS E GATILHOS DE ESTADO DE USUÁRIO
     document.getElementById("openModalBtn")?.addEventListener("click", () => {
         if (selectedUserId === null)
             return showModal("Por favor, selecione um utilizador primeiro!");
@@ -310,6 +309,7 @@ export function setupEventListeners() {
                 automationRulesService.applyUserRules(user);
                 renderUsers();
                 renderTasks();
+                renderDashboard(); // <--- ATUALIZAÇÃO FUNDAMENTAL
             }
         }
     });

@@ -474,7 +474,6 @@ button:hover { opacity: 0.9;
     box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
 }
 
-/* Compact counters panel with left/right groups */
 #contadores-stats {
     display: flex;
     gap: 10px;
@@ -514,19 +513,16 @@ button:hover { opacity: 0.9;
     line-height: 1;
 }
 
-/* Cores específicas */
 .num-active { color: #27ae60 !important; }
 .num-inactive { color: #e74c3c !important; }
 .num-completed { color: #27ae60 !important; }
 .num-total { color: #2c3e50 !important; }
 .num-percentage { color: #8e44ad !important; }
 
-/* Inline compact filter between counters */
 .inline-filter { display:flex; align-items:center; gap:10px; padding:4px 8px; flex:1; background: #f4f4f4 !important; border-radius:5px !important; }
 .inline-filter input, .inline-filter select { height:32px; padding:6px; font-size:0.85rem; }
 .inline-filter .field input { width:140px }
 
-/* Smaller global search spacing to keep counters visible */
 #global-search-panel { padding: 10px 12px; gap:8px; }
 
 #search-user { max-width: 160px; }
@@ -541,16 +537,14 @@ footer {
         font-size: 0.8rem;
     }
 
-/* Classes para estilos do HTML (movidos de inline) */
 #global-search-panel.inline-filter {
-    margin: 0 !important;
-    padding: 4px 8px !important;
     background: #f4f4f4 !important;
+    padding: 8px 15px !important;
     border-radius: 6px !important;
     display: flex !important;
-    gap: 10px !important;
+    gap: 12px !important;
     align-items: center !important;
-    flex: 1 !important;
+    margin: 10px 0 !important;
 }
 
 #global-search-panel label {
@@ -668,6 +662,98 @@ footer {
     color: white;
 }
 
+#stats-dashboard.counter-group.right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.stat-badge {
+    background: #ffffff !important; /* Fundo branco para contraste no header escuro */
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #2c3e50 !important; /* Texto escuro para leitura */
+    transition: transform 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stat-badge:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.15); }
+.stat-badge strong { 
+    font-size: 1.1rem; 
+    color: #3498db; 
+}
+.stat-badge.bug { border-left: 4px solid #e74c3c !important; }
+.stat-badge.global { border-left: 4px solid #f1c40f !important; }
+.stat-badge.task { border-left: 4px solid #3498db !important; }
+
+
+.dashboard-container { grid-area: main; display: flex; gap: 20px; padding: 20px; height: calc(100vh - 160px); }
+.column { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow-y: auto; }
+
+
+.details-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; display: flex; }
+.details-overlay-hidden { display: none !important; }
+
+dialog { border: none; border-radius: 12px; padding: 25px; margin: auto; }
+dialog::backdrop { background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); }
+#stats-dashboard {
+    display: inline-flex;
+    gap: 8px;
+    margin-left: 10px;
+}
+
+.stat-group {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+
+.stat-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    background: #fff;
+    border: 1px solid #ddd;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.stat-badge strong {
+    color: #2c3e50;
+}
+
+#global-search-panel.inline-filter {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+}
+
+
+#stats-dashboard.counter-group.right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-left: auto;
+}
+
+#stats-dashboard .counter-block {
+    min-width: 60px;
+    border-bottom: 2px solid #3498db; 
+}
+
+#stats-dashboard .counter-block .num {
+    color: #3498db;
+}
+
 @media (max-width: 1024px) {
     header {
         text-align: center;
@@ -686,7 +772,6 @@ footer {
         height: auto;
     }
 
-    /* On smaller screens, stack counters above the filter and make them compact */
     #contadores-stats {
         width: 100%;
         flex-direction: column;

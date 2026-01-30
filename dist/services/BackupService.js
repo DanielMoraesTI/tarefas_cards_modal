@@ -1,6 +1,11 @@
 import { listUsers, listTasks } from './index.js';
 import { assignmentService } from './AssignmentService.js';
-// Exporta dados em formato de objetos para armazenamento ou transmissão
+import { SystemConfig } from './SystemConfig.js';
+import { SystemLogger } from '../logs/SystemLogger.js'; // Importação do novo Logger
+/**
+ * Exporta dados em formato de objetos para armazenamento ou transmissão.
+ * Integrado com SystemConfig (Metadados) e SystemLogger (Histórico).
+ */
 export class BackupService {
     static exportUsers() {
         return listUsers.map(user => ({
@@ -35,13 +40,29 @@ export class BackupService {
         });
         return assignments;
     }
+    /**
+     * Consolida todos os dados do sistema.
+     * Agora regista a operação no SystemLogger e anexa os logs ao backup.
+     */
     static exportAll() {
-        return {
+        const systemInfo = SystemConfig.getInfo();
+        // Registo da ação no Logger Global
+        SystemLogger.log(`[Backup] Iniciando exportação total. Versão: ${systemInfo.version}`);
+        const backupData = {
+            // Metadados do Sistema
+            appName: systemInfo.appName,
+            version: systemInfo.version,
+            environment: systemInfo.environment,
+            // Dados da Aplicação
             timestamp: new Date().toISOString(),
             users: this.exportUsers(),
             tasks: this.exportTasks(),
             assignments: this.exportAssignments(),
+            // Histórico de logs (Anexado para auditoria completa)
+            systemLogs: SystemLogger.getLogs()
         };
+        SystemLogger.log(`[Backup] Exportação concluída. Total de tarefas: ${backupData.tasks.length}`);
+        return backupData;
     }
 }
 export default BackupService;

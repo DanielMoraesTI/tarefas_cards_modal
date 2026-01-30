@@ -1,17 +1,31 @@
+// tasks/BugTask.ts
 import { ITask } from './ITask.js';
 import { TaskStatus } from './TaskStatus.js';
+import { BaseEntity } from '../models/BaseEntity.js'; // Ajustado o caminho (está em models/)
+import { BusinessRules } from '../services/BusinessRules.js';
+import { SystemLogger } from '../logs/SystemLogger.js';
 
-export class BugTask implements ITask {
-    public id: number;
+export class BugTask extends BaseEntity implements ITask {
+    // Retiramos a declaração de 'id' aqui pois ela vem de BaseEntity
     public userId: number;
     public title: string;
     public completed: boolean = false;
     public status: TaskStatus = TaskStatus.CREATED;
 
-    constructor(id: number, title: string, userId: number) {
-        this.id = id;
+    private static bugCount: number = 0;
+
+    // Mudamos a ordem: id vem por último para ser opcional
+    constructor(title: string, userId: number, id?: number) {
+        super(id); // O super agora recebe o id opcional
         this.title = title;
         this.userId = userId;
+
+        BugTask.bugCount++;
+        SystemLogger.log(`[BugTask] Novo bug criado. Total: ${BugTask.bugCount}`);
+    }
+
+    public static getBugCount(): number {
+        return BugTask.bugCount;
     }
 
     getType(): string {
@@ -19,19 +33,13 @@ export class BugTask implements ITask {
     }
 
     moveTo(newStatus: TaskStatus): void {
-        if (this.status === TaskStatus.BLOCKED && newStatus === TaskStatus.COMPLETED) {
-            console.error("ERRO: Não é possível completar um bug que está BLOQUEADO.");
-            return;
-        }
-
-        if (this.status === TaskStatus.CREATED && newStatus === TaskStatus.COMPLETED) {
-            console.warn("Aviso: Bugs devem ser atribuídos ou iniciados antes de completados.");
+        if (newStatus === TaskStatus.COMPLETED) {
+            const isBlocked = this.status === TaskStatus.BLOCKED;
+            if (!BusinessRules.canTaskBeCompleted(isBlocked)) return;
         }
 
         this.status = newStatus;
-
         this.completed = (newStatus === TaskStatus.COMPLETED || newStatus === TaskStatus.ARCHIVED);
-        
-        console.log(`Bug #${this.id} movido para ${newStatus}`);
+        SystemLogger.log(`Bug #${this.id} movido para ${newStatus}`);
     }
 }

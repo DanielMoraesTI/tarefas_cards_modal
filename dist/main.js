@@ -1,5 +1,7 @@
 import { loadInitialData, listTasks, createFakeTasksIfEmpty, assignmentService } from './services/index.js';
-import { renderUsers, renderTasks, setupEventListeners, setUserSendoVisualizado, updateExtendedStatistics } from './ui/index.js';
+import { renderUsers, renderTasks, setupEventListeners, setUserSendoVisualizado, updateExtendedStatistics, renderDashboard // <--- Importação adicionada
+ } from './ui/index.js';
+// Inicializa os ouvintes de eventos globais
 setupEventListeners();
 // Carga inicial de dados com callback de renderização
 loadInitialData(() => {
@@ -7,6 +9,7 @@ loadInitialData(() => {
     renderUsers();
     renderTasks();
     updateExtendedStatistics();
+    renderDashboard(); // <--- Chamada adicionada para renderizar os contadores no topo ao carregar
 });
 // EXPOSIÇÃO GLOBAL
 // Abre o modal de detalhes do utilizador
@@ -41,7 +44,6 @@ window.openEditModal = (taskId) => {
         const newTaskInput = document.getElementById("newTask");
         const taskModal = document.getElementById("taskModal");
         const assignSelect = document.getElementById("assignSelect");
-        const prioritySelect = document.getElementById("prioritySelect");
         if (editTaskIdElem && newTaskInput && taskModal) {
             editTaskIdElem.value = taskId.toString();
             newTaskInput.value = task.title;
@@ -73,3 +75,4 @@ window.abrirModalEdicao = (taskOrId) => {
 window.renderUsers = renderUsers;
 window.renderTasks = renderTasks;
 window.updateStats = updateExtendedStatistics;
+window.renderDashboard = renderDashboard; // <--- Exposição global para garantir acesso

@@ -1,7 +1,17 @@
+import { listUsers } from './index.js';
+import { BusinessRules } from './BusinessRules.js';
+import { SystemLogger } from '../logs/SystemLogger.js'; // Importamos o novo Logger
 export class AssignmentService {
     taskToUsers = new Map();
     userToTasks = new Map();
     assignUser(taskId, userId) {
+        const user = listUsers.find((u) => u.getId === userId);
+        // Validação com BusinessRules e registo no SystemLogger
+        if (!user || !BusinessRules.canAssignTask(user.isActive())) {
+            const reason = !user ? "não existe" : "está inativo";
+            SystemLogger.log(`[Assignment] Falha ao atribuir: Utilizador ${userId} ${reason}.`);
+            return;
+        }
         if (!this.taskToUsers.has(taskId)) {
             this.taskToUsers.set(taskId, new Set());
         }
@@ -10,19 +20,22 @@ export class AssignmentService {
             this.userToTasks.set(userId, new Set());
         }
         this.userToTasks.get(userId).add(taskId);
+        // Registo de sucesso no Log Global
+        SystemLogger.log(`[Assignment] Sucesso: Utilizador ${user.name} (ID: ${userId}) atribuído à tarefa ${taskId}.`);
     }
     unassignUser(taskId, userId) {
         if (this.taskToUsers.has(taskId)) {
             this.taskToUsers.get(taskId).delete(userId);
         }
         if (this.userToTasks.has(userId)) {
+            // Corrigi aqui para não resetar o Set desnecessariamente antes do delete
             this.userToTasks.get(userId).delete(taskId);
         }
+        SystemLogger.log(`[Assignment] Remoção: Utilizador ${userId} removido da tarefa ${taskId}.`);
     }
     /**
      * Remove um usuário de todas as tarefas às quais ele está atribuído.
      * Necessário para a automação de usuários inativos.
-     * @param userId
      */
     unassignUserFromAllTasks(userId) {
         const associatedTasks = this.userToTasks.get(userId);
@@ -34,6 +47,7 @@ export class AssignmentService {
                 }
             });
             this.userToTasks.delete(userId);
+            SystemLogger.log(`[Assignment] Limpeza Global: Utilizador ${userId} removido de todas as tarefas por inatividade.`);
         }
     }
     getUsersFromTask(taskId) {
