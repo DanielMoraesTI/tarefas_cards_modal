@@ -1,101 +1,51 @@
-import { 
-    loadInitialData, 
-    listTasks, 
-    createFakeTasksIfEmpty, 
-    assignmentService 
-} from './services/index.js';
-import { 
-    renderUsers, 
-    renderTasks, 
-    setupEventListeners, 
-    setUserSendoVisualizado, 
-    updateExtendedStatistics,
-    renderDashboard // <--- Importação adicionada
-} from './ui/index.js';
-import { ITask } from './tasks/ITask.js';
+/**
+ * MAIN.TS - Ponto de Entrada da Aplicação
+ * 
+ * Responsabilidades:
+ * - Inicializar a aplicação quando o DOM está pronto
+ * - Executar demonstração dos serviços estáticos
+ * - Expor funções globais para uso no HTML
+ */
 
-// Inicializa os ouvintes de eventos globais
-setupEventListeners();
+import { initializeApplication, openUserDetailsModal, openEditModal } from './app/initialization.js';
+import { runAllSystemDemonstration } from './tests/systemDemonstration.js';
+import { renderUsers, renderTasks, updateExtendedStatistics, renderDashboard } from './ui/index.js';
 
-// Carga inicial de dados com callback de renderização
-loadInitialData(() => {
-    createFakeTasksIfEmpty();
-    renderUsers();
-    renderTasks();
-    updateExtendedStatistics();
-    renderDashboard(); // <--- Chamada adicionada para renderizar os contadores no topo ao carregar
+/**
+ * Aguarda o DOM estar completamente carregado e inicializa a aplicação
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    // Executar demonstração dos serviços estáticos
+    runAllSystemDemonstration();
+    
+    // Inicializar a aplicação
+    initializeApplication();
 });
 
-// EXPOSIÇÃO GLOBAL
+/**
+ * EXPOSIÇÃO DE FUNÇÕES GLOBAIS
+ * Estas funções estão disponíveis para uso no HTML (onclick, etc)
+ */
 
-// Abre o modal de detalhes do utilizador
-(window as any).abrirModalDetalhes = (user: any) => {
-    const modalDetails = document.getElementById("userDetails");
-    if (!modalDetails || !user) return;
+// Abre modal de detalhes do usuário
+(window as any).abrirModalDetalhes = openUserDetailsModal;
 
-    setUserSendoVisualizado(user);
-    
-    const detailName = document.getElementById("detailName");
-    const detailEmail = document.getElementById("detailEmail");
-    const detailRole = document.getElementById("detailRole");
+// Refresca dados do modal de detalhes
+(window as any).refreshModalData = (user: any) => openUserDetailsModal(user);
 
-    if (detailName) detailName.textContent = user.name;
-    if (detailEmail) detailEmail.textContent = typeof user.getEmail === 'function' ? user.getEmail() : user.email;
-    if (detailRole) detailRole.textContent = typeof user.getRole === 'function' ? user.getRole() : user.role;
+// Abre modal de edição de tarefa
+(window as any).openEditModal = openEditModal;
 
-    if (modalDetails instanceof HTMLDialogElement) {
-        modalDetails.showModal();
-    } else {
-        modalDetails.classList.remove("details-overlay-hidden");
-        modalDetails.style.display = "block";
-    }
+// Atalho para abrir edição com apenas ID
+(window as any).abrirModalEdicao = openEditModal;
 
-    (window as any).refreshModalData = () => (window as any).abrirModalDetalhes(user);
-};
-
-// Lógica centralizada para abrir o modal de edição de tarefa
-(window as any).openEditModal = (taskId: number) => {
-    const task = (listTasks as ITask[]).find((t: ITask) => t.id === taskId);
-    
-    if (task) {
-        const editTaskIdElem = document.getElementById("editTaskId") as HTMLInputElement;
-        const newTaskInput = document.getElementById("newTask") as HTMLTextAreaElement;
-        const taskModal = document.getElementById("taskModal") as HTMLDialogElement;
-        const assignSelect = document.getElementById("assignSelect") as HTMLSelectElement;
-
-        if (editTaskIdElem && newTaskInput && taskModal) {
-            editTaskIdElem.value = taskId.toString();
-            newTaskInput.value = task.title;
-
-            if (assignSelect) {
-                Array.from(assignSelect.options).forEach(opt => opt.selected = false);
-                const assignedIds = assignmentService.getUsersFromTask(taskId);
-                assignedIds.forEach(uid => {
-                    const option = assignSelect.querySelector(`option[value="${uid}"]`) as HTMLOptionElement;
-                    if (option) option.selected = true;
-                });
-            }
-
-            taskModal.showModal();
-        }
-    }
-};
-
-// Atalho global para abrir edição aceitando objeto ou ID
-(window as any).abrirModalEdicao = (taskOrId: any) => {
-    if (!taskOrId) return;
-    
-    const id = typeof taskOrId === 'number' 
-        ? taskOrId 
-        : (taskOrId.id ?? (typeof taskOrId.getId === 'function' ? taskOrId.getId : null));
-    
-    if (id !== null) {
-        (window as any).openEditModal(Number(id));
-    }
-};
-
-// Exposição das funções de renderização para depuração ou chamadas externas
+// Exposição das funções de renderização
 (window as any).renderUsers = renderUsers;
 (window as any).renderTasks = renderTasks;
 (window as any).updateStats = updateExtendedStatistics;
-(window as any).renderDashboard = renderDashboard; // <--- Exposição global para garantir acesso
+(window as any).renderDashboard = renderDashboard;
+
+// Exposição da função de demonstração (para executar manualmente)
+(window as any).runSystemDemo = runAllSystemDemonstration;
+
+//Professor: Quando tirei todos os window as any, a aplicação parou de funcionar, precisei retornar por, após fracionar o arquivo único inicial ter variáveis globais que o TS não reconhece sem o window as any.

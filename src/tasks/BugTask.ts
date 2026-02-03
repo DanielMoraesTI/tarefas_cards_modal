@@ -1,7 +1,7 @@
 // tasks/BugTask.ts
 import { ITask } from './ITask.js';
 import { TaskStatus } from './TaskStatus.js';
-import { BaseEntity } from '../models/BaseEntity.js'; // Ajustado o caminho (está em models/)
+import { BaseEntity } from '../models/BaseEntity.js';
 import { BusinessRules } from '../services/BusinessRules.js';
 import { SystemLogger } from '../logs/SystemLogger.js';
 
@@ -16,7 +16,7 @@ export class BugTask extends BaseEntity implements ITask {
 
     // Mudamos a ordem: id vem por último para ser opcional
     constructor(title: string, userId: number, id?: number) {
-        super(id); // O super agora recebe o id opcional
+        super(id);
         this.title = title;
         this.userId = userId;
 

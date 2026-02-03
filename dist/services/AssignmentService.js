@@ -1,12 +1,11 @@
 import { listUsers } from './index.js';
 import { BusinessRules } from './BusinessRules.js';
-import { SystemLogger } from '../logs/SystemLogger.js'; // Importamos o novo Logger
+import { SystemLogger } from '../logs/SystemLogger.js';
 export class AssignmentService {
     taskToUsers = new Map();
     userToTasks = new Map();
     assignUser(taskId, userId) {
         const user = listUsers.find((u) => u.getId === userId);
-        // Validação com BusinessRules e registo no SystemLogger
         if (!user || !BusinessRules.canAssignTask(user.isActive())) {
             const reason = !user ? "não existe" : "está inativo";
             SystemLogger.log(`[Assignment] Falha ao atribuir: Utilizador ${userId} ${reason}.`);
@@ -20,7 +19,6 @@ export class AssignmentService {
             this.userToTasks.set(userId, new Set());
         }
         this.userToTasks.get(userId).add(taskId);
-        // Registo de sucesso no Log Global
         SystemLogger.log(`[Assignment] Sucesso: Utilizador ${user.name} (ID: ${userId}) atribuído à tarefa ${taskId}.`);
     }
     unassignUser(taskId, userId) {
@@ -28,7 +26,6 @@ export class AssignmentService {
             this.taskToUsers.get(taskId).delete(userId);
         }
         if (this.userToTasks.has(userId)) {
-            // Corrigi aqui para não resetar o Set desnecessariamente antes do delete
             this.userToTasks.get(userId).delete(taskId);
         }
         SystemLogger.log(`[Assignment] Remoção: Utilizador ${userId} removido da tarefa ${taskId}.`);

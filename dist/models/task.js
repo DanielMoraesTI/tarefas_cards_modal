@@ -23,12 +23,8 @@ export class Task extends BaseEntity {
         this.userId = userId;
         this.category = category;
         this.subject = subject;
-        // 2. Incremento dinâmico baseado na categoria recebida
         this.incrementCategoryCount(category);
     }
-    /**
-     * Incrementa o contador da categoria específica com segurança.
-     */
     incrementCategoryCount(cat) {
         if (Task.categoryStats[cat] !== undefined) {
             Task.categoryStats[cat]++;
@@ -38,9 +34,6 @@ export class Task extends BaseEntity {
         }
         SystemLogger.log(`[Stats] Categoria "${cat}" incrementada. Total: ${Task.categoryStats[cat] || Task.categoryStats["Outros"]}`);
     }
-    /**
-     * Retorna o snapshot atual das estatísticas de categorias.
-     */
     static getCategoryStats() {
         return { ...Task.categoryStats };
     }

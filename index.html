@@ -11,23 +11,15 @@
     <header>
         <h1><i class="icon">⚖️</i> Escritório Advocacia: Colaboradores & Tarefas</h1>
         <div id="contadores-stats">
-            <div id="counters-left"></div>
-
-            <section id="global-search-panel" class="inline-filter">
-                <label>Filtrar:</label>
-                <div class="filter-field">
-                    <input type="text" id="search-title" placeholder="Título...">
-                    <select id="search-user">
-                        <option value="">Usuário</option>
-                    </select>
-                    <select id="search-status">
-                        <option value="">Status</option>
-                        <option value="Aberta">Aberta</option>
-                        <option value="Concluída">Concluída</option>
-                    </select>
+            <div id="counters-left">
+                <div class="toggle-views">
+                    <button id="btnViewUsers" class="toggle-btn toggle-btn-active" title="Visualizar Utilizadores">👤 Utilizadores</button>
+                    <button id="btnViewTasks" class="toggle-btn" title="Visualizar Tarefas">📋 Tarefas</button>
                 </div>
-            </section>
-
+                <button id="btnSystemInfo" class="btn-system-info" title="Informações do Sistema">ℹ️ Sistema</button>
+                <button id="btnViewLogs" class="btn-system-info" title="Visualizar Logs">📋 Logs</button>
+            </div>
+            
             <div id="counters-right">
                 <div id="stats-dashboard" class="counter-group right"></div>
             </div>
@@ -36,7 +28,10 @@
 
     <main class="dashboard-container">
         <section id="col-users" class="column">
-            <h2><i class="icon">👤</i> Gestão de Utilizadores</h2>
+            <div class="section-header">
+                <h2><i class="icon">👤</i> Gestão de Utilizadores</h2>
+                <div id="users-stats-inline" class="inline-stats"></div>
+            </div>
             
             <form id="formAdd" class="form-panel" novalidate>
                 <div class="input-group">
@@ -71,9 +66,35 @@
         </section>
 
         <section id="col-tasks" class="column active-column">
-            <div id="task-context-header">
-                <h2><i class="icon">📋</i> Tarefas: <span id="selectedUserName">Nenhum selecionado</span></h2>
-                <small>ID Selecionado: <span id="selectedUserIdDisplay">-</span></small>
+            <div class="section-header section-header-tasks-global">
+                <h2><i class="icon">📋</i> Gestão de Tarefas</h2>
+                <div id="tasks-stats-global" class="inline-stats"></div>
+            </div>
+
+            <section id="global-search-panel" class="inline-filter-relocated">
+                <label>Filtrar:</label>
+                <div class="filter-field">
+                    <input type="text" id="search-title" placeholder="Título...">
+                    <select id="search-user">
+                        <option value="">Usuário</option>
+                    </select>
+                    <select id="search-status">
+                        <option value="">Status</option>
+                        <option value="Aberta">Aberta</option>
+                        <option value="Concluída">Concluída</option>
+                    </select>
+                </div>
+            </section>
+
+            <div class="user-selected-header">
+                <div class="user-selected-info">
+                    <h3>
+                        <span class="user-icon">👤</span>
+                        <span id="selectedUserName">Nenhum utilizador selecionado</span>
+                    </h3>
+                    <small>ID: <span id="selectedUserIdDisplay">-</span></small>
+                </div>
+                <div id="tasks-stats-user" class="inline-stats inline-stats-user"></div>
             </div>
 
             <div id="problem" class="task-panel">
@@ -99,10 +120,10 @@
                             </select>
 
                             <select id="prioritySelect">
-                                <option value="LOW">Prioridade: Baixa</option>
-                                <option value="NORMAL" selected>Prioridade: Normal</option>
-                                <option value="HIGH">Prioridade: Alta</option>
-                                <option value="CRITICAL">Prioridade: CRÍTICA</option>
+                                <option value="Baixa">Prioridade: Baixa</option>
+                                <option value="Normal" selected>Prioridade: Normal</option>
+                                <option value="Alta">Prioridade: Alta</option>
+                                <option value="Crítica">Prioridade: CRÍTICA</option>
                             </select>
 
                             <select id="categorySelect">
@@ -135,9 +156,6 @@
                     </div>
                 </dialog>
 
-                <div id="search" class="search-container">
-                    <input id="searchTask" type="text" placeholder="Pesquisar tarefas...">
-                </div>
                 <div id="tagFilterContainer">
                     <span>Filtrar por:</span>
                     <div id="tagCloud"></div>
@@ -158,7 +176,10 @@
                 <p><strong>E-mail:</strong> <span id="detailEmail"></span></p>
                 <p><strong>Função:</strong> <span id="detailRole"></span></p>
             </div>
-            <button id="closeDetails">Fechar</button>
+            <div class="details-actions">
+                <button id="btnRemoveUserFromModal" class="btn-danger">Remover Utilizador</button>
+                <button id="closeDetails">Fechar</button>
+            </div>
         </div>
     </section>
 
@@ -174,6 +195,51 @@
         <div id="confirmModal-buttons">
             <button id="btnCancel" type="button">Cancelar</button>
             <button id="btnConfirmAction" type="button">Remover</button>
+        </div>
+    </dialog>
+
+    <dialog id="systemInfoModal">
+        <div class="modal-content">
+            <h2>ℹ️ Informações do Sistema</h2>
+            <div id="systemInfoContent" class="system-info-panel">
+                <div class="info-section">
+                    <h3>📱 Aplicação</h3>
+                    <p><strong>Nome:</strong> <span id="appName"></span></p>
+                    <p><strong>Versão:</strong> <span id="appVersion"></span></p>
+                    <p><strong>Ambiente:</strong> <span id="appEnvironment"></span></p>
+                </div>
+                <div class="info-section">
+                    <h3>📊 Estatísticas Globais</h3>
+                    <p><strong>Total de Entidades:</strong> <span id="totalEntities"></span></p>
+                    <p><strong>Gerador de IDs:</strong> <span id="idGeneratorInfo">Ativo e Funcional</span></p>
+                </div>
+                <div class="info-section">
+                    <h3>⚙️ Alterar Ambiente</h3>
+                    <select id="envSelect" class="boxEnter">
+                        <option value="development">Development</option>
+                        <option value="production">Production</option>
+                        <option value="test">Test</option>
+                    </select>
+                    <button id="btnSetEnv" type="button">Aplicar</button>
+                </div>
+            </div>
+            <div class="modal-buttons-custom">
+                <button id="btnCloseSystemInfo" type="button">Fechar</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="logsModal">
+        <div class="modal-content modal-large">
+            <h2>📋 Logs do Sistema</h2>
+            <div class="logs-controls">
+                <button id="btnClearLogs" type="button" class="btn-danger">🗑️ Limpar Logs</button>
+                <button id="btnRefreshLogs" type="button">🔄 Atualizar</button>
+            </div>
+            <div id="logsContent" class="logs-panel"></div>
+            <div class="modal-buttons-custom">
+                <button id="btnCloseLogs" type="button">Fechar</button>
+            </div>
         </div>
     </dialog>
 

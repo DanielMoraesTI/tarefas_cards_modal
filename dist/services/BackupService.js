@@ -49,16 +49,13 @@ export class BackupService {
         // Registo da ação no Logger Global
         SystemLogger.log(`[Backup] Iniciando exportação total. Versão: ${systemInfo.version}`);
         const backupData = {
-            // Metadados do Sistema
             appName: systemInfo.appName,
             version: systemInfo.version,
             environment: systemInfo.environment,
-            // Dados da Aplicação
             timestamp: new Date().toISOString(),
             users: this.exportUsers(),
             tasks: this.exportTasks(),
             assignments: this.exportAssignments(),
-            // Histórico de logs (Anexado para auditoria completa)
             systemLogs: SystemLogger.getLogs()
         };
         SystemLogger.log(`[Backup] Exportação concluída. Total de tarefas: ${backupData.tasks.length}`);

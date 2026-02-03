@@ -2,6 +2,8 @@ export * from './renderUser.js';
 export * from './renderTask.js';
 export * from './modals.js';
 export * from './eventHandlers.js';
+export * from './systemUI.js';
+export * from './viewToggle.js';
 
 import { Task } from '../models/task.js';
 import { BugTask } from '../tasks/BugTask.js';

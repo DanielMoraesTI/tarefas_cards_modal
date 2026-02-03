@@ -106,7 +106,7 @@ export function renderTasks(arrayToRender, resetFilters = true) {
                 </div>
 
                 <div style="font-size:0.75rem; color:#7f8c8d; margin-bottom: 15px;">
-                    <span style="color:${pColor}; font-weight:bold;">${pIcon}${pName}</span> | 👥 ${assignmentService.getUsersFromTask(task.id).map(id => listUsers.find(u => u.getId === id)?.name).join(", ")} | 📅 ${deadlineService.getDeadlineDate(task.id) || '29/01/2026'}
+                    <span style="color:${pColor}; font-weight:bold;">${pIcon}${pName}</span> | � ${listUsers.find(u => u.getId === task.userId)?.name || 'Sistema'} | 👥 ${assignmentService.getUsersFromTask(task.id).map(id => listUsers.find(u => u.getId === id)?.name).join(", ") || '(nenhum)'} | 📅 ${deadlineService.getDeadlineDate(task.id) || '29/01/2026'}
                 </div>
 
                 <div style="background:#fcfcfc; border:1px solid #f0f0f0; border-radius:6px; padding:12px; margin-bottom:18px;">

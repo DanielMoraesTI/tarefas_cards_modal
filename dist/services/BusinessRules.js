@@ -34,9 +34,6 @@ export class BusinessRules {
         }
         return canAssign;
     }
-    /**
-     * Regra: Títulos devem ter substância (mínimo 3 caracteres).
-     */
     static isValidTitle(title) {
         const valid = title.trim().length >= 3;
         if (!valid) {

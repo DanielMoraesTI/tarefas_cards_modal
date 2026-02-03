@@ -1,4 +1,3 @@
-import { UserClass } from '../models/index.js';
 import { 
     listUsers, 
     selectedUserId, 
@@ -7,54 +6,41 @@ import {
     setSelectedUserId, 
     listTasks, 
     removeTasksByUserId, 
-    StatisticsService 
+    StatisticsService,
+    getTaskUrgencyMessage,
+    countUserTasks 
 } from '../services/index.js';
 import { renderTasks } from './renderTask.js';
 import { assignmentService } from '../services/AssignmentService.js';
+import { openUserDetailsModal } from '../app/initialization.js';
 
-const usersListUI = document.getElementById("usersList") as HTMLUListElement;
-const selectedUserNameUI = document.getElementById("selectedUserName") as HTMLSpanElement;
+const usersListUI = document.getElementById("usersList");
+const selectedUserNameUI = document.getElementById("selectedUserName");
 const assignSelectUI = document.getElementById("assignSelect") as HTMLSelectElement;
 
 // Renderiza a lista de cartões de utilizadores e atualiza estatísticas
-export function renderUsers(arrayToRender: UserClass[] = listUsers): void {
+export function renderUsers(arrayToRender = listUsers) {
     if (!usersListUI) return;
+
     usersListUI.innerHTML = "";
-    
-    // CÁLCULO DE ESTATÍSTICAS
-    const totalUsers = listUsers.length;
-    const totalActive = listUsers.filter(u => u.isActive()).length;
-    const activityPercentage = totalUsers > 0 ? Math.round((totalActive / totalUsers) * 100) : 0;
-
-    const elements = {
-        uCount: document.getElementById("userCount"),
-        aCount: document.getElementById("activeCount"),
-        iCount: document.getElementById("inactiveCount"),
-        aRate: document.getElementById("activityRate"),
-        aBar: document.getElementById("activityBar")
-    };
-
-    if (elements.uCount) elements.uCount.textContent = totalUsers.toString();
-    if (elements.aCount) elements.aCount.textContent = totalActive.toString();
-    if (elements.iCount) elements.iCount.textContent = (totalUsers - totalActive).toString();
-    if (elements.aRate) elements.aRate.textContent = `${activityPercentage}%`;
-    if (elements.aBar) elements.aBar.style.width = `${activityPercentage}%`;
 
     renderAssignOptions();
     renderUserFilterOptions();
 
-    // RENDERIZAÇÃO DOS CARDS
+    // RENDERIZAÇÃO DOS CARDS (SEM BOTÃO ATIVAR/DESATIVAR)
     arrayToRender.forEach(user => {
         const cardDiv = document.createElement("div");
-        
         cardDiv.className = `user-card ${selectedUserId === user.getId ? 'selected' : ''}`;
         cardDiv.setAttribute("data-id", user.getId.toString());
-        
+
         const countTasks = listTasks.filter(t => {
             const isOwner = t.userId === user.getId;
             const isAssigned = assignmentService.getUsersFromTask(t.id).includes(user.getId);
             return isOwner || isAssigned;
         }).length;
+
+        // Obter a mensagem condicional baseada no número de tarefas
+        const { message, status } = getTaskUrgencyMessage(countTasks);
 
         cardDiv.innerHTML = `
             <div class="user-header">
@@ -65,121 +51,167 @@ export function renderUsers(arrayToRender: UserClass[] = listUsers): void {
             <p>Estado: <span class="${user.isActive() ? 'status-active' : 'status-inactive'}">${user.isActive() ? 'Ativo' : 'Inativo'}</span></p>
             <p>Função: <span style="font-weight:bold; color:#2c3e50;">${user.getRole()}</span></p>
             <div class="tasks-area"><p><strong>${countTasks}</strong> tarefas</p></div>
-            <div class="card-actions">
-                <button class="btnToggle" data-id="${user.getId}">${user.isActive() ? 'Desativar' : 'Ativar'}</button>
-                <button class="btnRemoveUser" data-id="${user.getId}">Remover</button>
+            <div class="urgency-message" data-status="${status}">
+                ${message}
             </div>
         `;
 
-        // Botão de Alternar Status (Ativo/Inativo)
-        cardDiv.querySelector(".btnToggle")?.addEventListener("click", (e) => {
-            e.stopPropagation();
-            toggleUserStatus(user.getId);
-            renderUsers();
-        });
-
-        // Botão de Remover Usuário
-        cardDiv.querySelector(".btnRemoveUser")?.addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (confirm("Deseja eliminar este utilizador e as suas tarefas?")) {
-                removeUserLogic(user.getId);
-                removeTasksByUserId(user.getId);
-                if (selectedUserId === user.getId) {
-                    setSelectedUserId(null);
-                    selectedUserNameUI.textContent = "Nenhum selecionado";
-                }
-                renderUsers();
-                renderTasks();
-            }
+        // Clique no card para abrir detalhes
+        cardDiv.addEventListener("click", () => {
+            selectUser(user.getId);
+            openUserDetailsModal(user);
         });
 
         usersListUI.appendChild(cardDiv);
     });
+
     updateExtendedStatistics();
 }
 
-export function selectUser(id: number): void {
+export function selectUser(id: number) {
     setSelectedUserId(id);
     const user = listUsers.find(u => u.getId === id);
+
     if (user) {
-        selectedUserNameUI.textContent = user.name;
+        if (selectedUserNameUI) selectedUserNameUI.textContent = user.name;
         const idDisplay = document.getElementById("selectedUserIdDisplay");
         if (idDisplay) idDisplay.textContent = id.toString();
+
         renderUsers();
         renderTasks();
+        updateExtendedStatistics();
     }
 }
 
-export function renderAssignOptions(): void {
+// Excluir o criador da tarefa da lista de colaboradores
+export function renderAssignOptions() {
     if (!assignSelectUI) return;
-    const selectedValues = Array.from(assignSelectUI.selectedOptions).map(opt => opt.value);
 
-    assignSelectUI.innerHTML = listUsers
+    const selectedValues = Array.from(assignSelectUI.selectedOptions)
+        .map((opt: HTMLOptionElement) => opt.value);
+
+    // FILTRAR: Remover o criador da lista
+    const availableUsers = listUsers.filter(user => {
+        if (selectedUserId === null) return true;
+        return user.getId !== selectedUserId;
+    });
+
+    assignSelectUI.innerHTML = availableUsers
         .map(user => `
-            <option value="${user.getId}" ${selectedValues.includes(user.getId.toString()) ? 'selected' : ''}>
+            <option value="${user.getId}" 
+                    ${selectedValues.includes(user.getId.toString()) ? 'selected' : ''}>
                 ${user.name} (${user.isActive() ? 'Ativo' : 'Inativo'})
             </option>
         `).join("");
 }
 
-export function updateExtendedStatistics(): void {
-    const left = document.getElementById("counters-left") as HTMLElement;
-    const right = document.getElementById("counters-right") as HTMLElement;
-    if (!left || !right) return;
-
-    const totalUsers = listUsers.length;
-    const activeUsers = listUsers.filter(u => u.isActive()).length;
-    const inactiveUsers = totalUsers - activeUsers;
-    const usersPercentage = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0;
-
-    const totalTasks = StatisticsService.countTasks();
-    const completedTasks = StatisticsService.countCompletedTasks();
-    const completionPercentage = StatisticsService.getCompletionPercentage();
+// Renderiza estatísticas globais e específicas do usuário
+export function updateExtendedStatistics() {
+    const usersStatsInline = document.getElementById("users-stats-inline");
     
-    left.innerHTML = `
-        <div class="counter-group left">
-            <div class="counter-block">
-                <div class="num num-total">${totalUsers}</div>
-                <div class="label">Usuários</div>
-            </div>
-            <div class="counter-block">
-                <div class="num num-active">${activeUsers}</div>
-                <div class="label">Ativos</div>
-            </div>
-            <div class="counter-block">
-                <div class="num num-inactive">${inactiveUsers}</div>
-                <div class="label">Inativos</div>
-            </div>
-            <div class="counter-block">
-                <div class="num num-percentage">${usersPercentage}%</div>
-                <div class="label">Ativos %</div>
-            </div>
-        </div>
-    `;
+    if (usersStatsInline) {
+        const totalUsers = listUsers.length;
+        const activeUsers = listUsers.filter(u => u.isActive()).length;
+        const inactiveUsers = totalUsers - activeUsers;
+        const usersPercentage = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0;
 
-    right.innerHTML = `
-        <div class="counter-group right">
-            <div class="counter-block">
-                <div class="num num-total">${totalTasks}</div>
-                <div class="label">Tarefas</div>
+        usersStatsInline.innerHTML = `
+            <div class="stat-item">
+                <span class="stat-num">${totalUsers}</span>
+                <span class="stat-label">Usuários</span>
             </div>
-            <div class="counter-block">
-                <div class="num num-completed">${completedTasks}</div>
-                <div class="label">Concluídas</div>
+            <div class="stat-item">
+                <span class="stat-num stat-active">${activeUsers}</span>
+                <span class="stat-label">Ativos</span>
             </div>
-            <div class="counter-block">
-                <div class="num num-percentage">${completionPercentage}%</div>
-                <div class="label">Conclusão</div>
+            <div class="stat-item">
+                <span class="stat-num stat-inactive">${inactiveUsers}</span>
+                <span class="stat-label">Inativos</span>
             </div>
-        </div>
-    `;
+            <div class="stat-item">
+                <span class="stat-num stat-percentage">${usersPercentage}%</span>
+                <span class="stat-label">Atividade</span>
+            </div>
+        `;
+    }
+
+    // 2. ESTATÍSTICAS GLOBAIS DE TAREFAS (todas as tarefas do sistema)
+    const tasksStatsGlobal = document.getElementById("tasks-stats-global");
+    
+    if (tasksStatsGlobal) {
+        const totalTasks = StatisticsService.countTasks();
+        const completedTasks = StatisticsService.countCompletedTasks();
+        const completionPercentage = StatisticsService.getCompletionPercentage();
+
+        tasksStatsGlobal.innerHTML = `
+            <div class="stat-item">
+                <span class="stat-num">${totalTasks}</span>
+                <span class="stat-label">Total</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-num stat-completed">${completedTasks}</span>
+                <span class="stat-label">Concluídas</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-num stat-percentage">${completionPercentage}%</span>
+                <span class="stat-label">Conclusão</span>
+            </div>
+        `;
+    }
+
+    // 3. ESTATÍSTICAS ESPECÍFICAS DO USUÁRIO SELECIONADO
+    const tasksStatsUser = document.getElementById("tasks-stats-user");
+    
+    if (tasksStatsUser) {
+        if (selectedUserId === null) {
+            tasksStatsUser.style.display = 'none';
+        } else {
+            tasksStatsUser.style.display = 'flex';
+            
+            const currentUserId = selectedUserId;
+            
+            const userTasks = listTasks.filter(t => {
+                const isOwner = t.userId === currentUserId;
+                const isAssigned = assignmentService.getUsersFromTask(t.id).includes(currentUserId);
+                return isOwner || isAssigned;
+            });
+
+            const userTasksTotal = userTasks.length;
+            const userTasksCompleted = userTasks.filter(t => t.completed).length;
+            const userTasksPending = userTasksTotal - userTasksCompleted;
+            const userCompletionPercentage = userTasksTotal > 0 
+                ? Math.round((userTasksCompleted / userTasksTotal) * 100) 
+                : 0;
+
+            tasksStatsUser.innerHTML = `
+                <div class="stat-item stat-item-small">
+                    <span class="stat-num">${userTasksTotal}</span>
+                    <span class="stat-label">Tarefas</span>
+                </div>
+                <div class="stat-item stat-item-small">
+                    <span class="stat-num stat-completed">${userTasksCompleted}</span>
+                    <span class="stat-label">Concluídas</span>
+                </div>
+                <div class="stat-item stat-item-small">
+                    <span class="stat-num stat-inactive">${userTasksPending}</span>
+                    <span class="stat-label">Pendentes</span>
+                </div>
+                <div class="stat-item stat-item-small">
+                    <span class="stat-num stat-percentage">${userCompletionPercentage}%</span>
+                    <span class="stat-label">Conclusão</span>
+                </div>
+            `;
+        }
+    }
 }
 
-export function renderUserFilterOptions(): void {
-    const sel = document.getElementById('search-user') as HTMLSelectElement | null;
+export function renderUserFilterOptions() {
+    const sel = document.getElementById('search-user') as HTMLSelectElement;
     if (!sel) return;
+
     const current = sel.value;
-    sel.innerHTML = '<option value="">Todos</option>' + 
+
+    sel.innerHTML = '<option value="">Todos</option>' +
         listUsers.map(u => `
             <option value="${u.getId}" ${current === String(u.getId) ? 'selected' : ''}>
                 ${u.name} (${u.isActive() ? 'Ativo' : 'Inativo'})

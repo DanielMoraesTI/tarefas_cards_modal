@@ -11,11 +11,11 @@ export class CommentService {
     }
 
     public getComments(taskId: number): Comment[] {
-        return this.comments.filter(c => (c as any).taskId === taskId);
+        return this.comments.filter(c => c.taskId === taskId);
     }
 
     public removeComment(commentId: number): void {
-        this.comments = this.comments.filter(c => (c as any).id !== commentId);
+        this.comments = this.comments.filter(c => c.id !== commentId);
         console.log(`Comentário ${commentId} removido com sucesso.`);
     }
 

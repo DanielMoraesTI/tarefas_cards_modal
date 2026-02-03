@@ -14,7 +14,6 @@ export class SystemConfig {
      */
     static setEnvironment(env) {
         SystemConfig.environment = env;
-        // Mantemos um log interno para rastrear mudanças de configuração em tempo real
         console.log(`[SystemConfig] Environment updated to: ${SystemConfig.environment}`);
     }
     /**

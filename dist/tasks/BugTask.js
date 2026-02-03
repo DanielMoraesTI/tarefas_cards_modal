@@ -1,5 +1,5 @@
 import { TaskStatus } from './TaskStatus.js';
-import { BaseEntity } from '../models/BaseEntity.js'; // Ajustado o caminho (está em models/)
+import { BaseEntity } from '../models/BaseEntity.js';
 import { BusinessRules } from '../services/BusinessRules.js';
 import { SystemLogger } from '../logs/SystemLogger.js';
 export class BugTask extends BaseEntity {
@@ -11,7 +11,7 @@ export class BugTask extends BaseEntity {
     static bugCount = 0;
     // Mudamos a ordem: id vem por último para ser opcional
     constructor(title, userId, id) {
-        super(id); // O super agora recebe o id opcional
+        super(id);
         this.title = title;
         this.userId = userId;
         BugTask.bugCount++;
