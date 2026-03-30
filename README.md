@@ -5,8 +5,7 @@ Projeto frontend desenvolvido em TypeScript para gestão de utilizadores, tarefa
 
 ## Nome de quem realizou o projeto
 
-Daniel Moraes
-UpSkill 218
+Daniel Moraes - UpSkill 218
 
 ## Link do repositório GitHub
 
