@@ -37,3 +37,4 @@ window.updateStats = updateExtendedStatistics;
 window.renderDashboard = renderDashboard;
 // Exposição da função de demonstração (para executar manualmente)
 window.runSystemDemo = runAllSystemDemonstration;
+//Professor: Quando tirei todos os window as any, a aplicação parou de funcionar, precisei retornar por, após fracionar o arquivo único inicial ter variáveis globais que o TS não reconhece sem o window as any.

@@ -1,10 +1,11 @@
 import { UserClass } from '../models/index.js';
-import { listTasks } from '../services/index.js';
+import { listTasks, toggleUserStatus } from '../services/index.js';
 import { assignmentService } from '../services/AssignmentService.js';
 import { automationRulesService } from '../services/AutomationRulesService.js';
 import { renderUsers, renderTasks } from './index.js';
 
 export let userSendoVisualizado: UserClass | null = null;
+let handleToggleStatus: ((event: Event) => void) | null = null;
 
 export const atualizarConteudoModal = (user: UserClass) => {
     const detailsContent = document.getElementById("detailsContent") as HTMLElement;
@@ -61,21 +62,37 @@ export const atualizarConteudoModal = (user: UserClass) => {
         </div>
     `;
 
-    // Implementação da troca de status com gatilho de automação
-    document.getElementById("btnChangeUserStatus")?.addEventListener("click", () => {
-        const novoStatus = !user.isActive();
-        
-        user.setActive(novoStatus);
+    // Remover listener antigo se existir
+    const btnToggle = document.getElementById("btnChangeUserStatus");
+    if (btnToggle && handleToggleStatus) {
+        btnToggle.removeEventListener("click", handleToggleStatus);
+    }
 
-        if (!novoStatus) {
-            automationRulesService.applyUserRules(user);
+    // Criar novo handler nomeado
+    handleToggleStatus = async () => {
+        try {
+            // Chamar o backend para alternar o status
+            await toggleUserStatus(user.getId);
+            
+            // Aplicar regras de automação se inativar
+            if (!user.isActive()) {
+                automationRulesService.applyUserRules(user);
+            }
+
+            // Atualizar o conteúdo do modal
+            atualizarConteudoModal(user);
+            
+            // Atualizar a UI
+            renderUsers();
+            renderTasks();
+        } catch (error) {
+            console.error('Erro ao alternar status do usuário:', error);
+            alert('Erro ao alternar status do usuário. Tente novamente.');
         }
+    };
 
-        atualizarConteudoModal(user);
-        
-        renderUsers();
-        renderTasks();
-    });
+    // Adicionar novo listener
+    document.getElementById("btnChangeUserStatus")?.addEventListener("click", handleToggleStatus);
 };
 
 export function showModal(message: string): void {

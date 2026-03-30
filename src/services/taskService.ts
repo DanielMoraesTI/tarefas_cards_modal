@@ -6,12 +6,165 @@ import { priorityService } from './PriorityService.js';
 import { deadlineService } from './DeadlineService.js';
 import { assignmentService } from './AssignmentService.js';
 import { SystemLogger } from '../logs/SystemLogger.js';
+import { apiTaskService } from '../api/apiTaskService.js';
+import { apiTagService } from '../api/apiTagService.js';
 
 export let listTasks: ITask[] = [];
 
 export const setListTasks = (newList: ITask[]) => {
     listTasks.splice(0, listTasks.length, ...newList);
 };
+
+/**
+ * Carrega dados iniciais de tarefas do backend via API
+ * Converte os dados do backend para instâncias de Task
+ * Nota: As tags já vêm com as tarefas do backend
+ */
+export async function loadInitialTasksData(): Promise<void> {
+    try {
+        listTasks.splice(0, listTasks.length);
+        
+        // Buscar tarefas do backend
+        const tasks = await apiTaskService.getAllTasks();
+        
+        // Verificar se recebeu resposta válida
+        if (!tasks) {
+            console.warn('[TaskService] Backend retornou null/undefined');
+            return;
+        }
+        
+        // Converter dados do backend para instâncias de Task
+        if (Array.isArray(tasks)) {
+            tasks.forEach((taskData: any) => {
+                // Mapear categoria do backend para workCategoria válida
+                const workCat = ['Audiência', 'Atendimento', 'Análise'].includes(taskData.categoria) 
+                    ? taskData.categoria 
+                    : 'Audiência';
+                
+                // Criar instância de Task com os dados do backend
+                const newTask = new Task(
+                    taskData.title,
+                    taskData.user_id || 0,
+                    workCat as any,
+                    'Civil' as any, // Padrão para subjectCategoria
+                    taskData.id
+                );
+                
+                // Se a tarefa está concluída, marcar como tal
+                if (taskData.concluida) {
+                    (newTask as any).completed = true;
+                    (newTask as any).completionDate = taskData.dataConclusao;
+                }
+                
+                // Armazenar dados adicionais
+                (newTask as any).responsavelNome = taskData.responsavelNome;
+                (newTask as any).dataConclusao = taskData.dataConclusao;
+                
+                // O backend já retorna tags com cada tarefa - IMPORTANTE: Deep copy para evitar compartilhamento
+                if (Array.isArray(taskData.tags) && taskData.tags.length > 0) {
+                    (newTask as any).tags = taskData.tags.map((t: any) => ({
+                        id: t.id,
+                        name: t.name,
+                        color: t.color || '#9b59b6'
+                    }));
+                } else {
+                    (newTask as any).tags = [];
+                }
+                
+                listTasks.push(newTask);
+            });
+        }
+    } catch (error) {
+        console.error('[TaskService] Erro ao carregar tarefas:', error);
+    }
+}
+
+/**
+ * Carrega tags via /tasks/:id/tags para TODAS as tarefas
+ */
+export async function loadTasksTagsFallback(): Promise<void> {
+    try {
+        if (listTasks.length === 0) return;
+        
+        // Carregar tags de TODAS as tarefas em paralelo
+        const tagPromises = listTasks.map(async (task: any) => {
+            try {
+                const tags = await apiTagService.getTagsByTask(task.id);
+                
+                task.tags = Array.isArray(tags) && tags.length > 0
+                    ? tags.map((t: any) => ({
+                        id: t.id,
+                        name: t.name,
+                        color: t.color || '#9b59b6'
+                    }))
+                    : [];
+            } catch (error) {
+                task.tags = [];
+            }
+        });
+        
+        await Promise.all(tagPromises);
+    } catch (error) {
+        console.error('[TaskService] Erro ao carregar tags:', error);
+    }
+}
+
+/**
+ * Recarrega tags de TODAS as tarefas quando muda de usuário
+ */
+export async function reloadAllTagsForUser(userId: number): Promise<void> {
+    try {
+        const tagPromises = listTasks.map(async (task: any) => {
+            try {
+                const tags = await apiTagService.getTagsByTask(task.id);
+                task.tags = Array.isArray(tags) && tags.length > 0 
+                    ? tags.map((t: any) => ({
+                        id: t.id,
+                        name: t.name,
+                        color: t.color || '#9b59b6'
+                    }))
+                    : [];
+            } catch (error) {
+                task.tags = [];
+            }
+        });
+        
+        await Promise.all(tagPromises);
+    } catch (error) {
+        console.error('[TaskService] Erro ao recarregar tags:', error);
+    }
+}
+
+/**
+ * Recarrega uma tarefa específica do backend e sincroniza suas tags
+ * Usada após adicionar/remover tags para garantir sincronização correta
+ * @param taskId - ID da tarefa a recarregar
+ */
+export async function reloadTaskById(taskId: number): Promise<void> {
+    try {
+        // Encontrar tarefa local
+        const localTask = listTasks.find(t => t.id === taskId);
+        if (!localTask) {
+            return;
+        }
+        
+        // Buscar tarefa do backend
+        const taskData = await apiTaskService.getTaskById(taskId);
+        if (!taskData) {
+            return;
+        }
+        
+        // Atualizar campos da tarefa
+        (localTask as any).title = taskData.title;
+        (localTask as any).responsavelNome = taskData.responsavelNome;
+        (localTask as any).dataConclusao = taskData.dataConclusao;
+        
+        // Backend não retorna tags em getTaskById, então deixar como está
+        // Tags serão recarregadas via reloadAllTagsForUser()
+    } catch (error) {
+        console.error('[taskService] Erro ao recarregar tarefa:', error);
+    }
+}
 
 export function removeTasksByUserId(userId: number): void {
     const tasksToRemove = listTasks.filter(t => t.userId === userId);
@@ -25,159 +178,7 @@ export function removeTasksByUserId(userId: number): void {
     SystemLogger.log(`[TaskService] Removidas tarefas do utilizador ${userId}.`);
 }
 
-/**
- * DADOS FAKE DE TAREFAS
- * Todas as tarefas criadas na inicialização da aplicação
- */
-function createFakeTasks(): ITask[] {
-    
-    // TAREFAS DE DANIEL MORAES (ID 3) - 6 TAREFAS
-    const t1 = new Task('Revisar contrato de cliente X', 3, 'Audiência', 'Civil', 1001);
-    (t1 as any).tag = 'contrato';
-    
-    const t2 = new Task('Preparar audiência inicial - processo Y', 3, 'Atendimento', 'Civil', 1002);
-    (t2 as any).tag = 'audiencia';
 
-    const t3 = new Task('Analisar prova documental do caso Z', 3, 'Análise', 'Penal', 1003);
-    (t3 as any).tag = 'documentos';
-
-    const t4 = new Task('Preparar recurso extraordinário - Cliente A', 3, 'Audiência', 'Civil', 1004);
-    (t4 as any).tag = 'recurso';
-
-    const t5 = new Task('Pesquisa jurisprudencial - Tema B', 3, 'Análise', 'Penal', 1005);
-    (t5 as any).tag = 'pesquisa';
-
-    const t6 = new Task('Redigir petição - Caso C', 3, 'Atendimento', 'Civil', 1006);
-    (t6 as any).tag = 'petição';
-
-    // TAREFAS DE DANILSON (ID 7) - 11 TAREFAS
-    const t7 = new Task('Revisar documentação - Processo 1', 7, 'Análise', 'Trabalhista', 1007);
-    (t7 as any).tag = 'docs';
-
-    const t8 = new Task('Agendar audiência - Processo 2', 7, 'Audiência', 'Civil', 1008);
-    (t8 as any).tag = 'agendamento';
-
-    const t9 = new Task('Análise de jurisprudência - Processo 3', 7, 'Análise', 'Penal', 1009);
-    (t9 as any).tag = 'análise';
-
-    const t10 = new Task('Levantamento de legislação - Processo 4', 7, 'Análise', 'Trabalhista', 1010);
-    (t10 as any).tag = 'levantamento';
-
-    const t11 = new Task('Consultoria jurídica - Cliente D', 7, 'Atendimento', 'Civil', 1011);
-    (t11 as any).tag = 'consulta';
-
-    const t12 = new Task('Parecer jurídico - Caso E', 7, 'Análise', 'Civil', 1012);
-    (t12 as any).tag = 'parecer';
-
-    const t13 = new Task('Acompanhamento processual - Processo 5', 7, 'Atendimento', 'Penal', 1013);
-    (t13 as any).tag = 'acompanhamento';
-
-    const t14 = new Task('Negociação extrajudicial - Cliente F', 7, 'Atendimento', 'Civil', 1014);
-    (t14 as any).tag = 'negociação';
-
-    const t15 = new Task('Preparação para julgamento - Processo 6', 7, 'Audiência', 'Penal', 1015);
-    (t15 as any).tag = 'julgamento';
-
-    const t16 = new Task('Análise de contrato - Cliente G', 7, 'Análise', 'Civil', 1016);
-    (t16 as any).tag = 'contrato-análise';
-
-    const t17 = new Task('Recurso em revisão - Processo 7', 7, 'Audiência', 'Trabalhista', 1017);
-    (t17 as any).tag = 'recurso-revisão';
-
-    // TAREFA PARA OUTRO USUÁRIO (para diversificar)
-    const b1 = new BugTask('Erro no formulário de cadastro de clientes', 1, 1018);
-    (b1 as any).tag = 'bug';
-
-    return [t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, b1];
-}
-
-/**
- * CONFIGURAÇÕES DE PRIORIDADE, PRAZO E ATRIBUIÇÃO DE TAREFAS
- */
-function configureTasksProperties(tasks: ITask[]): void {
-    const now = Date.now();
-    const [t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, b1] = tasks;
-
-    // Configurações de tarefas de DANIEL MORAES (6 tarefas)
-    priorityService.setPriority(t1.id, Priority.HIGH);
-    deadlineService.setDeadline(t1.id, new Date(now + 1000 * 60 * 60 * 24 * 3));
-    assignmentService.assignUser(t1.id, 4);
-
-    priorityService.setPriority(t2.id, Priority.NORMAL);
-    deadlineService.setDeadline(t2.id, new Date(now + 1000 * 60 * 60 * 24 * 7));
-    assignmentService.assignUser(t2.id, 5);
-
-    priorityService.setPriority(t3.id, Priority.LOW);
-    deadlineService.setDeadline(t3.id, new Date(now + 1000 * 60 * 60 * 24 * 2));
-    assignmentService.assignUser(t3.id, 1);
-
-    priorityService.setPriority(t4.id, Priority.CRITICAL);
-    deadlineService.setDeadline(t4.id, new Date(now + 1000 * 60 * 60 * 24 * 5));
-    assignmentService.assignUser(t4.id, 2);
-    assignmentService.assignUser(t4.id, 8);
-
-    priorityService.setPriority(t5.id, Priority.HIGH);
-    deadlineService.setDeadline(t5.id, new Date(now + 1000 * 60 * 60 * 24 * 10));
-    assignmentService.assignUser(t5.id, 9);
-
-    priorityService.setPriority(t6.id, Priority.NORMAL);
-    deadlineService.setDeadline(t6.id, new Date(now + 1000 * 60 * 60 * 24 * 4));
-    assignmentService.assignUser(t6.id, 6);
-    assignmentService.assignUser(t6.id, 11);
-
-    // Configurações de tarefas de DANILSON (11 tarefas)
-    priorityService.setPriority(t7.id, Priority.NORMAL);
-    deadlineService.setDeadline(t7.id, new Date(now + 1000 * 60 * 60 * 24 * 6));
-    assignmentService.assignUser(t7.id, 2);
-
-    priorityService.setPriority(t8.id, Priority.LOW);
-    deadlineService.setDeadline(t8.id, new Date(now + 1000 * 60 * 60 * 24 * 8));
-    assignmentService.assignUser(t8.id, 4);
-
-    priorityService.setPriority(t9.id, Priority.HIGH);
-    deadlineService.setDeadline(t9.id, new Date(now + 1000 * 60 * 60 * 24 * 3));
-    assignmentService.assignUser(t9.id, 1);
-    assignmentService.assignUser(t9.id, 5);
-
-    priorityService.setPriority(t10.id, Priority.NORMAL);
-    deadlineService.setDeadline(t10.id, new Date(now + 1000 * 60 * 60 * 24 * 9));
-    assignmentService.assignUser(t10.id, 2);
-
-    priorityService.setPriority(t11.id, Priority.CRITICAL);
-    deadlineService.setDeadline(t11.id, new Date(now + 1000 * 60 * 60 * 24 * 1));
-    assignmentService.assignUser(t11.id, 3);
-    assignmentService.assignUser(t11.id, 4);
-
-    priorityService.setPriority(t12.id, Priority.HIGH);
-    deadlineService.setDeadline(t12.id, new Date(now + 1000 * 60 * 60 * 24 * 5));
-    assignmentService.assignUser(t12.id, 1);
-
-    priorityService.setPriority(t13.id, Priority.NORMAL);
-    deadlineService.setDeadline(t13.id, new Date(now + 1000 * 60 * 60 * 24 * 10));
-    assignmentService.assignUser(t13.id, 6);
-
-    priorityService.setPriority(t14.id, Priority.LOW);
-    deadlineService.setDeadline(t14.id, new Date(now + 1000 * 60 * 60 * 24 * 7));
-    assignmentService.assignUser(t14.id, 9);
-    assignmentService.assignUser(t14.id, 11);
-
-    priorityService.setPriority(t15.id, Priority.CRITICAL);
-    deadlineService.setDeadline(t15.id, new Date(now + 1000 * 60 * 60 * 24 * 2));
-    assignmentService.assignUser(t15.id, 8);
-
-    priorityService.setPriority(t16.id, Priority.HIGH);
-    deadlineService.setDeadline(t16.id, new Date(now + 1000 * 60 * 60 * 24 * 4));
-    assignmentService.assignUser(t16.id, 5);
-
-    priorityService.setPriority(t17.id, Priority.NORMAL);
-    deadlineService.setDeadline(t17.id, new Date(now + 1000 * 60 * 60 * 24 * 11));
-    assignmentService.assignUser(t17.id, 2);
-    assignmentService.assignUser(t17.id, 10);
-
-    // Bug task
-    priorityService.setPriority(b1.id, Priority.CRITICAL);
-    assignmentService.assignUser(b1.id, 1);
-}
 
 /**
  * Retorna uma mensagem condicional baseada no número de tarefas de um usuário
@@ -208,12 +209,115 @@ export function countUserTasks(userId: number): number {
     }).length;
 }
 
-export function createFakeTasksIfEmpty(): void {
-    if (listTasks.length > 0) return;
+/**
+ * Cria uma nova tarefa via backend
+ * @param title - Título da tarefa
+ * @param categoria - Categoria da tarefa
+ * @param user_id - ID do usuário responsável
+ */
+export async function createTaskBackend(
+    title: string,
+    categoria: string = 'Geral',
+    user_id?: number
+): Promise<any> {
+    try {
+        if (!title.trim()) {
+            throw new Error('Título da tarefa é obrigatório');
+        }
 
-    const tasks = createFakeTasks();
-    listTasks.push(...tasks);
-    configureTasksProperties(tasks);
+        const taskData = {
+            title,
+            categoria,
+            user_id: user_id || null,
+            concluida: false
+        };
 
-    SystemLogger.log("[TaskService] Tarefas fictícias criadas com sucesso.");
+        const newTask = await apiTaskService.createTask(taskData);
+        
+        if (!newTask) {
+            throw new Error('Falha ao criar tarefa no backend');
+        }
+
+        // Mapear categoria do backend para workCategoria válida
+        const workCat = ['Audiência', 'Atendimento', 'Análise'].includes(newTask.categoria) 
+            ? newTask.categoria 
+            : 'Audiência';
+
+        // Converter dados do backend para instância de Task e adicionar à lista
+        const task = new Task(
+            newTask.title,
+            newTask.user_id || 0,
+            workCat as any,
+            'Civil' as any,
+            newTask.id
+        );
+
+        (task as any).responsavelNome = newTask.responsavelNome;
+        (task as any).dataConclusao = newTask.dataConclusao;
+
+        listTasks.push(task);
+        
+        SystemLogger.log(`[TaskService] Tarefa criada: ${title}`);
+        return newTask;
+    } catch (error) {
+        console.error('[TaskService] Erro ao criar tarefa:', error);
+        throw error;
+    }
+}
+
+/**
+ * Atualiza uma tarefa existente via backend
+ * @param id - ID da tarefa
+ * @param updates - Objeto com campos a atualizar
+ */
+export async function updateTaskBackend(id: number, updates: any): Promise<void> {
+    try {
+        const updated = await apiTaskService.updateTask(id, updates);
+        
+        if (!updated) {
+            throw new Error('Falha ao atualizar tarefa no backend');
+        }
+
+        // Encontrar e atualizar a tarefa na lista
+        const taskIndex = listTasks.findIndex(t => t.id === id);
+        if (taskIndex !== -1) {
+            const task = listTasks[taskIndex];
+            
+            // Atualizar propriedades
+            if (updates.title) (task as any).title = updates.title;
+            if (updates.categoria) (task as any).categoria = updates.categoria;
+            if (updates.concluida !== undefined) (task as any).completed = updates.concluida;
+            if (updates.dataConclusao !== undefined) (task as any).dataConclusao = updates.dataConclusao;
+            if (updates.responsavelNome !== undefined) (task as any).responsavelNome = updates.responsavelNome;
+            if (updates.user_id !== undefined) (task as any).userId = updates.user_id;
+        }
+        
+        SystemLogger.log(`[TaskService] Tarefa ${id} atualizada`);
+    } catch (error) {
+        console.error('[TaskService] Erro ao atualizar tarefa:', error);
+        throw error;
+    }
+}
+
+/**
+ * Remove uma tarefa via backend
+ * @param id - ID da tarefa a remover
+ */
+export async function deleteTaskLogic(id: number): Promise<void> {
+    try {
+        const deleted = await apiTaskService.deleteTask(id);
+        
+        if (!deleted) {
+            throw new Error('Falha ao deletar tarefa no backend');
+        }
+
+        // Remover da lista
+        const filtered = listTasks.filter(t => t.id !== id);
+        setListTasks(filtered);
+        
+        SystemLogger.log(`[TaskService] Tarefa ${id} deletada`);
+    } catch (error) {
+        console.error('[TaskService] Erro ao deletar tarefa:', error);
+        throw error;
+    }
 }

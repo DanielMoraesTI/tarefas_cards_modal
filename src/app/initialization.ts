@@ -10,7 +10,8 @@
 
 import { 
     loadInitialData, 
-    createFakeTasksIfEmpty 
+    loadInitialTasksData,
+    loadTasksTagsFallback
 } from '../services/index.js';
 import { 
     renderUsers, 
@@ -25,19 +26,39 @@ import {
 /**
  * Inicializa a aplicação após o DOM estar carregado
  */
-export function initializeApplication(): void {
+export async function initializeApplication(): Promise<void> {
     new ViewToggle();
     
     setupEventListeners();
     setupSystemModals();
     
-    loadInitialData(() => {
-        createFakeTasksIfEmpty();
-        renderUsers();
-        renderTasks();
-        updateExtendedStatistics();
-        renderDashboard();
-    });
+    // Carregar usuários e tarefas do backend
+    await loadInitialData(() => {});
+    await loadInitialTasksData();
+    
+    // Carregar tags
+    try {
+        await loadTasksTagsFallback();
+    } catch (error) {
+        console.error('[initialization] Erro ao carregar tags:', error);
+    }
+    
+    // Renderizar UI
+    renderUsers();
+    renderTasks();
+    updateExtendedStatistics();
+    
+    // Atualizar UI para mostrar "Todos"
+    const selectedUserNameElem = document.getElementById("selectedUserName");
+    if (selectedUserNameElem) {
+        selectedUserNameElem.textContent = "Todos os Utilizadores";
+    }
+    const selectedUserIdDisplay = document.getElementById("selectedUserIdDisplay");
+    if (selectedUserIdDisplay) {
+        selectedUserIdDisplay.textContent = "Todos";
+    }
+    
+    renderDashboard();
 }
 
 /**
@@ -64,7 +85,8 @@ export function openUserDetailsModal(user: any): void {
                 const { removeTasksByUserId } = await import('../services/taskService.js');
                 const { renderUsers, renderTasks } = await import('../ui/index.js');
 
-                removeUserLogic(user.getId);
+                // Aguardar o delete do backend
+                await removeUserLogic(user.getId);
                 removeTasksByUserId(user.getId);
                 
                 if (selectedUserId === user.getId) {

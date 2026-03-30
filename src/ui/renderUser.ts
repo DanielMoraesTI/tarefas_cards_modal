@@ -8,7 +8,9 @@ import {
     removeTasksByUserId, 
     StatisticsService,
     getTaskUrgencyMessage,
-    countUserTasks 
+    countUserTasks,
+    loadTasksTagsFallback,
+    reloadAllTagsForUser
 } from '../services/index.js';
 import { renderTasks } from './renderTask.js';
 import { assignmentService } from '../services/AssignmentService.js';
@@ -56,10 +58,11 @@ export function renderUsers(arrayToRender = listUsers) {
             </div>
         `;
 
-        // Clique no card para abrir detalhes
+        // Clique no card para SELECIONAR o usuário (sem abrir modal)
         cardDiv.addEventListener("click", () => {
+
             selectUser(user.getId);
-            openUserDetailsModal(user);
+            // ❌ REMOVER: openUserDetailsModal(user); - isso estava cobrindo a view!
         });
 
         usersListUI.appendChild(cardDiv);
@@ -69,10 +72,12 @@ export function renderUsers(arrayToRender = listUsers) {
 }
 
 export function selectUser(id: number) {
-    setSelectedUserId(id);
-    const user = listUsers.find(u => u.getId === id);
+    try {
+        setSelectedUserId(id);
+        const user = listUsers.find(u => u.getId === id);
 
-    if (user) {
+        if (!user) return;
+
         if (selectedUserNameUI) selectedUserNameUI.textContent = user.name;
         const idDisplay = document.getElementById("selectedUserIdDisplay");
         if (idDisplay) idDisplay.textContent = id.toString();
@@ -80,6 +85,18 @@ export function selectUser(id: number) {
         renderUsers();
         renderTasks();
         updateExtendedStatistics();
+        
+        // Recarregar tags em background
+        setTimeout(async () => {
+            try {
+                await reloadAllTagsForUser(id);
+                renderTasks(undefined, false);
+            } catch (error) {
+                console.error('[renderUser] Erro ao recarregar tags:', error);
+            }
+        }, 200);
+    } catch (error) {
+        console.error('[renderUser] Erro ao selecionar usuário:', error);
     }
 }
 

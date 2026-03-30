@@ -9,8 +9,9 @@ export class Task extends BaseEntity implements ITask {
     public completed: boolean = false;
     public status: TaskStatus = TaskStatus.CREATED; 
     public concludedAt?: Date;
+    public tags: any[] = []; // Inicializar tags como array vazio
 
-    // 1. Dicionário Estático para contagem por categoria
+    // Dicionário Estático para contagem por categoria
     private static categoryStats: Record<string, number> = {
         "Audiência": 0,
         "Atendimento": 0,

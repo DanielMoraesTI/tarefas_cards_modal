@@ -1,7 +1,6 @@
-import { listUsers, selectedUserId, setSelectedUserId, listTasks, StatisticsService, getTaskUrgencyMessage } from '../services/index.js';
+import { listUsers, selectedUserId, setSelectedUserId, listTasks, StatisticsService, getTaskUrgencyMessage, reloadAllTagsForUser } from '../services/index.js';
 import { renderTasks } from './renderTask.js';
 import { assignmentService } from '../services/AssignmentService.js';
-import { openUserDetailsModal } from '../app/initialization.js';
 const usersListUI = document.getElementById("usersList");
 const selectedUserNameUI = document.getElementById("selectedUserName");
 const assignSelectUI = document.getElementById("assignSelect");
@@ -37,19 +36,21 @@ export function renderUsers(arrayToRender = listUsers) {
                 ${message}
             </div>
         `;
-        // Clique no card para abrir detalhes
+        // Clique no card para SELECIONAR o usuário (sem abrir modal)
         cardDiv.addEventListener("click", () => {
             selectUser(user.getId);
-            openUserDetailsModal(user);
+            // ❌ REMOVER: openUserDetailsModal(user); - isso estava cobrindo a view!
         });
         usersListUI.appendChild(cardDiv);
     });
     updateExtendedStatistics();
 }
 export function selectUser(id) {
-    setSelectedUserId(id);
-    const user = listUsers.find(u => u.getId === id);
-    if (user) {
+    try {
+        setSelectedUserId(id);
+        const user = listUsers.find(u => u.getId === id);
+        if (!user)
+            return;
         if (selectedUserNameUI)
             selectedUserNameUI.textContent = user.name;
         const idDisplay = document.getElementById("selectedUserIdDisplay");
@@ -58,6 +59,19 @@ export function selectUser(id) {
         renderUsers();
         renderTasks();
         updateExtendedStatistics();
+        // Recarregar tags em background
+        setTimeout(async () => {
+            try {
+                await reloadAllTagsForUser(id);
+                renderTasks(undefined, false);
+            }
+            catch (error) {
+                console.error('[renderUser] Erro ao recarregar tags:', error);
+            }
+        }, 200);
+    }
+    catch (error) {
+        console.error('[renderUser] Erro ao selecionar usuário:', error);
     }
 }
 // Excluir o criador da tarefa da lista de colaboradores

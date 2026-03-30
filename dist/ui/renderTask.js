@@ -1,5 +1,5 @@
 import { Task } from '../models/task.js';
-import { listTasks, setListTasks, selectedUserId, listUsers, assignmentService, deadlineService, priorityService, CommentService, AttachmentService, TagService } from '../services/index.js';
+import { listTasks, selectedUserId, listUsers, assignmentService, deadlineService, priorityService, CommentService, AttachmentService, TagService, deleteTaskLogic, reloadAllTagsForUser } from '../services/index.js';
 import { renderUsers } from './renderUser.js';
 import { TaskStatus } from '../tasks/TaskStatus.js';
 import { canDeleteTask, canEditTask } from '../security/permissions.js';
@@ -10,7 +10,7 @@ const searchInput = document.getElementById("searchTask");
 const commentService = new CommentService();
 const attachmentService = new AttachmentService();
 const tagService = new TagService();
-let activeTagFilter = null;
+let activeTagFilter = null; // Agora usa ID da tag
 let currentSearchTerm = "";
 if (searchInput) {
     searchInput.addEventListener("input", (e) => {
@@ -19,8 +19,9 @@ if (searchInput) {
     });
 }
 /**
- * @param arrayToRender
- * @param resetFilters
+ * Renderiza tarefas filtradas do usuário selecionado
+ * @param arrayToRender - Array opcional de tarefas a renderizar
+ * @param resetFilters - Se true, reseta filtros de busca e tags
  */
 export function renderTasks(arrayToRender, resetFilters = true) {
     if (!taskListUI)
@@ -32,30 +33,54 @@ export function renderTasks(arrayToRender, resetFilters = true) {
             searchInput.value = "";
     }
     taskListUI.innerHTML = "";
-    if (selectedUserId === null)
-        return;
-    const currentUser = listUsers.find(u => u.getId === selectedUserId);
-    const userRole = currentUser ? currentUser.getRole() : null;
-    let tasksToShow = arrayToRender || listTasks.filter(t => t.userId === selectedUserId || assignmentService.getUsersFromTask(t.id).includes(selectedUserId));
+    // Se selectedUserId é null, mostrar TODAS as tarefas
+    // Se selectedUserId tem valor, mostrar tarefas do usuário específico
+    let tasksToShow;
+    let currentUser = null;
+    let userRole = null;
+    if (selectedUserId === null) {
+        // Mostrar TODAS as tarefas
+        tasksToShow = arrayToRender || listTasks;
+    }
+    else {
+        // Mostrar tarefas do usuário específico
+        currentUser = listUsers.find(u => u.getId === selectedUserId);
+        userRole = currentUser ? currentUser.getRole() : null;
+        tasksToShow = arrayToRender || listTasks.filter(t => t.userId === selectedUserId || assignmentService.getUsersFromTask(t.id).includes(selectedUserId));
+    }
     // AUTOMAÇÃO: Aplicar regras globais (como expiração) antes de renderizar
     tasksToShow.forEach(task => automationRulesService.applyRules(task));
-    const allTags = new Set();
-    tasksToShow.forEach(t => tagService.getTags(t.id).forEach(tag => allTags.add(tag)));
+    // Coletar todas as tags DAS TAREFAS visíveis, evitando duplicatas por ID
+    const allTagsMap = new Map();
+    tasksToShow.forEach(t => {
+        const taskTags = t.tags || [];
+        taskTags.forEach((tag) => {
+            if (!allTagsMap.has(tag?.id)) {
+                allTagsMap.set(tag?.id, tag);
+            }
+        });
+    });
+    const allTags = Array.from(allTagsMap.values());
     const filterContainer = document.createElement("div");
     filterContainer.style.cssText = "margin: 10px 0 20px 0; display: flex; flex-wrap: wrap; gap: 8px;";
-    if (allTags.size > 0) {
+    if (allTags.length > 0) {
         const btnAll = document.createElement("button");
         btnAll.innerText = "TODAS";
         btnAll.style.cssText = `padding: 4px 10px; font-size: 0.65rem; font-weight: bold; border-radius: 4px; cursor: pointer; border: 1px solid #ddd; background: ${activeTagFilter === null ? '#2c3e50' : '#fff'}; color: ${activeTagFilter === null ? '#fff' : '#2c3e50'};`;
         btnAll.onclick = () => { activeTagFilter = null; renderTasks(undefined, false); };
         filterContainer.appendChild(btnAll);
-        allTags.forEach(tag => {
+        allTags.forEach((tag) => {
+            // Verificar se tag tem propriedades válidas
+            if (!tag || !tag.name || !tag.id) {
+                return; // Pular esta tag
+            }
             const btnTag = document.createElement("button");
-            btnTag.innerText = `#${tag.toUpperCase()}`;
-            const isActive = activeTagFilter === tag;
-            btnTag.style.cssText = `padding: 4px 10px; font-size: 0.65rem; font-weight: bold; border-radius: 4px; cursor: pointer; border: 1px solid #9b59b6; background: ${isActive ? '#9b59b6' : '#fff'}; color: ${isActive ? '#fff' : '#9b59b6'};`;
+            btnTag.innerText = `#${tag.name.toUpperCase()}`;
+            const isActive = activeTagFilter === tag.id;
+            const tagColor = tag.color || '#3498db'; // Cor padrão se não houver cor
+            btnTag.style.cssText = `padding: 4px 10px; font-size: 0.65rem; font-weight: bold; border-radius: 4px; cursor: pointer; border: 1px solid ${tagColor}; background: ${isActive ? tagColor : '#fff'}; color: ${isActive ? '#fff' : tagColor};`;
             btnTag.onclick = () => {
-                activeTagFilter = tag;
+                activeTagFilter = tag.id;
                 renderTasks(undefined, false);
             };
             filterContainer.appendChild(btnTag);
@@ -65,8 +90,12 @@ export function renderTasks(arrayToRender, resetFilters = true) {
     if (currentSearchTerm) {
         tasksToShow = tasksToShow.filter(t => t.title.toLowerCase().includes(currentSearchTerm));
     }
+    // NOVO: Filtrar por tag usando ID
     if (activeTagFilter) {
-        tasksToShow = tasksToShow.filter(t => tagService.getTags(t.id).includes(activeTagFilter));
+        tasksToShow = tasksToShow.filter(t => {
+            const taskTags = t.tags || [];
+            return taskTags.some((tag) => tag.id === activeTagFilter);
+        });
     }
     tasksToShow.forEach(task => {
         const li = document.createElement("li");
@@ -75,18 +104,23 @@ export function renderTasks(arrayToRender, resetFilters = true) {
         const pColor = priorityService.getPriorityColor(rawPriority);
         const pName = priorityService.getPriorityName(rawPriority);
         const pIcon = rawPriority === Priority.CRITICAL ? "🔥 " : "";
-        const tags = tagService.getTags(task.id);
+        // Obter tags do objeto tarefa
+        const tags = task.tags || [];
         const attachments = attachmentService.getAttachments(task.id);
         const comments = commentService.getComments(task.id);
-        li.style.cssText = `border-left: 5px solid ${pColor}; width: 100%; min-height: 400px; padding: 20px; margin-bottom: 20px; background-color: #fff; display: flex; flex-direction: column; box-sizing: border-box; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-radius: 4px;`;
+        li.style.cssText = `border-left: 5px solid ${pColor}; width: 100%; padding: 20px; margin-bottom: 20px; background-color: #fff; display: flex; flex-direction: column; box-sizing: border-box; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-radius: 4px;`;
         let badgesHtml = "";
         if (task instanceof Task) {
             badgesHtml = `
                 <span style="background:#ecf0f1; color:#2c3e50; padding:2px 8px; border-radius:4px; font-size:0.65rem; font-weight:bold; border:1px solid #bdc3c7;">${task.category}</span>
                 <span style="background:#f39c12; color:white; padding:2px 8px; border-radius:4px; font-size:0.65rem; font-weight:bold; margin-left:5px;">${task.subject}</span>`;
         }
-        tags.forEach(t => {
-            badgesHtml += `<span style="background:#9b59b6; color:white; padding:2px 8px; border-radius:4px; font-size:0.65rem; font-weight:bold; margin-left:5px;">#${t}</span>`;
+        // Renderizar tags com cor dinâmica
+        tags.forEach((t, index) => {
+            if (!t || !t.name || !t.color) {
+                return;
+            }
+            badgesHtml += `<span style="background:${t.color}; color:white; padding:2px 8px; border-radius:4px; font-size:0.65rem; font-weight:bold; margin-left:5px;">#${t.name}</span>`;
         });
         li.innerHTML = `
             <div style="width: 100%; flex: 1; ${task.completed ? 'opacity:0.7;' : ''}">
@@ -155,11 +189,38 @@ export function renderTasks(arrayToRender, resetFilters = true) {
             renderTasks(undefined, false);
             renderUsers();
         });
-        li.querySelector(".btnAddTag")?.addEventListener("click", () => {
+        li.querySelector(".btnAddTag")?.addEventListener("click", async () => {
             const val = li.querySelector(".inputNewTag").value;
             if (val.trim()) {
-                tagService.addTag(task.id, val.trim());
-                renderTasks(undefined, false);
+                try {
+                    // Primeiro, obter todas as tags
+                    const allTags = await tagService.getAllTags();
+                    // Procurar se existe tag com esse nome
+                    let tag = allTags.find((t) => t.name.toLowerCase() === val.trim().toLowerCase());
+                    // Se não encontrou, criar nova tag
+                    if (!tag) {
+                        tag = await tagService.createTag(val.trim(), '#9b59b6');
+                    }
+                    // Verificar se tag foi criada/encontrada com sucesso
+                    if (tag && tag.id) {
+                        // Adicionar tag à tarefa
+                        await tagService.addTag(task.id, tag.id);
+                        // Limpar input
+                        li.querySelector(".inputNewTag").value = "";
+                        // ✅ IMPORTANTE: Recarregar TODAS as tags (via GET /tasks/:id/tags)
+                        // Isso sincroniza a nova tag com o objeto task em memory
+                        await reloadAllTagsForUser(selectedUserId || 0);
+                        // Atualizar UI
+                        renderTasks(undefined, false);
+                    }
+                    else {
+                        throw new Error("Falha ao criar ou encontrar tag: " + val.trim());
+                    }
+                }
+                catch (error) {
+                    console.error('[renderTask] Erro ao adicionar tag:', error);
+                    alert(`Erro ao adicionar tag: ${error}`);
+                }
             }
         });
         li.querySelector(".btnAddComment")?.addEventListener("click", () => {
@@ -188,11 +249,17 @@ export function renderTasks(arrayToRender, resetFilters = true) {
             renderTasks(undefined, false);
         }));
         li.querySelector(".btnEditTask")?.addEventListener("click", () => window.abrirModalEdicao?.(task));
-        li.querySelector(".btnRemoveTaskAction")?.addEventListener("click", () => {
+        li.querySelector(".btnRemoveTaskAction")?.addEventListener("click", async () => {
             if (confirm("Remover tarefa?")) {
-                setListTasks(listTasks.filter(t => t.id !== task.id));
-                renderTasks();
-                renderUsers();
+                try {
+                    await deleteTaskLogic(task.id);
+                    renderTasks();
+                    renderUsers();
+                }
+                catch (error) {
+                    console.error('Erro ao deletar tarefa:', error);
+                    alert('❌ Erro ao deletar tarefa. Tente novamente.');
+                }
             }
         });
         taskListUI.appendChild(li);

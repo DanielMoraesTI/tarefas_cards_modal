@@ -80,6 +80,7 @@ header {
     background: #f8f9fa;
     border-left: 4px solid #3498db;
     display: none;
+    min-height: 600px;
 }
 
 /* ===== CONTROLE DE VISIBILIDADE DE COLUNAS ===== */
@@ -281,6 +282,7 @@ button:active {
     list-style: none;
     margin-top: 15px;
     padding: 0;
+    min-height: 500px;
 }
 
 .task-item {

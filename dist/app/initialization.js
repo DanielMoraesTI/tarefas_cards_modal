@@ -7,22 +7,39 @@
  * - Configurar event listeners
  * - Inicializar modais
  */
-import { loadInitialData, createFakeTasksIfEmpty } from '../services/index.js';
+import { loadInitialData, loadInitialTasksData, loadTasksTagsFallback } from '../services/index.js';
 import { renderUsers, renderTasks, setupEventListeners, updateExtendedStatistics, renderDashboard, setupSystemModals, ViewToggle } from '../ui/index.js';
 /**
  * Inicializa a aplicação após o DOM estar carregado
  */
-export function initializeApplication() {
+export async function initializeApplication() {
     new ViewToggle();
     setupEventListeners();
     setupSystemModals();
-    loadInitialData(() => {
-        createFakeTasksIfEmpty();
-        renderUsers();
-        renderTasks();
-        updateExtendedStatistics();
-        renderDashboard();
-    });
+    // Carregar usuários e tarefas do backend
+    await loadInitialData(() => { });
+    await loadInitialTasksData();
+    // Carregar tags
+    try {
+        await loadTasksTagsFallback();
+    }
+    catch (error) {
+        console.error('[initialization] Erro ao carregar tags:', error);
+    }
+    // Renderizar UI
+    renderUsers();
+    renderTasks();
+    updateExtendedStatistics();
+    // Atualizar UI para mostrar "Todos"
+    const selectedUserNameElem = document.getElementById("selectedUserName");
+    if (selectedUserNameElem) {
+        selectedUserNameElem.textContent = "Todos os Utilizadores";
+    }
+    const selectedUserIdDisplay = document.getElementById("selectedUserIdDisplay");
+    if (selectedUserIdDisplay) {
+        selectedUserIdDisplay.textContent = "Todos";
+    }
+    renderDashboard();
 }
 /**
  * Atalho para abrir modal de detalhes do usuário
@@ -48,7 +65,8 @@ export function openUserDetailsModal(user) {
                 const { removeUserLogic, setSelectedUserId, selectedUserId } = await import('../services/userService.js');
                 const { removeTasksByUserId } = await import('../services/taskService.js');
                 const { renderUsers, renderTasks } = await import('../ui/index.js');
-                removeUserLogic(user.getId);
+                // Aguardar o delete do backend
+                await removeUserLogic(user.getId);
                 removeTasksByUserId(user.getId);
                 if (selectedUserId === user.getId) {
                     setSelectedUserId(null);
