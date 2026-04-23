@@ -566,7 +566,7 @@ export function setupEventListeners() {
     document.getElementById("btnClearFilter")?.addEventListener("click", () => {
         renderTasks(undefined, true);
     });
-    // ✅ NOVO: Listeners para funcionalidades de TAGS (Backend)
+    // Listeners para funcionalidades de TAGS (Backend)
     const tagService = new TagService();
     // Delegação: Adicionar tag a uma tarefa (assumindo que há um elemento data-task-id no modal)
     document.addEventListener("click", async (e) => {

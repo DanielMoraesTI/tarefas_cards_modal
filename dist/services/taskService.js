@@ -41,7 +41,7 @@ export async function loadInitialTasksData() {
                 // Armazenar dados adicionais
                 newTask.responsavelNome = taskData.responsavelNome;
                 newTask.dataConclusao = taskData.dataConclusao;
-                // ✅ O backend já retorna tags com cada tarefa - IMPORTANTE: Deep copy para evitar compartilhamento
+                // O backend já retorna tags com cada tarefa - IMPORTANTE: Deep copy para evitar compartilhamento
                 if (Array.isArray(taskData.tags) && taskData.tags.length > 0) {
                     newTask.tags = taskData.tags.map((t) => ({
                         id: t.id,
@@ -61,8 +61,7 @@ export async function loadInitialTasksData() {
     }
 }
 /**
- * FALLBACK: Carrega tags via /tasks/:id/tags para TODAS as tarefas
- * ⚠️ CRÍTICO: GET /tasks NÃO retorna tags, então sempre carregar separadamente
+ * Carrega tags via /tasks/:id/tags para TODAS as tarefas
  */
 export async function loadTasksTagsFallback() {
     try {

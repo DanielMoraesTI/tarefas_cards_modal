@@ -10,8 +10,8 @@ export class Task extends BaseEntity {
     completed = false;
     status = TaskStatus.CREATED;
     concludedAt;
-    tags = []; // ✅ ADICIONADO: Inicializar tags como array vazio
-    // 1. Dicionário Estático para contagem por categoria
+    tags = []; // Inicializar tags como array vazio
+    // Dicionário Estático para contagem por categoria
     static categoryStats = {
         "Audiência": 0,
         "Atendimento": 0,

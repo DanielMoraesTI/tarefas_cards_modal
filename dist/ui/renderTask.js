@@ -48,7 +48,7 @@ export function renderTasks(arrayToRender, resetFilters = true) {
         userRole = currentUser ? currentUser.getRole() : null;
         tasksToShow = arrayToRender || listTasks.filter(t => t.userId === selectedUserId || assignmentService.getUsersFromTask(t.id).includes(selectedUserId));
     }
-    // AUTOMAÇÃO: Aplicar regras globais (como expiração) antes de renderizar
+    // Aplicar regras globais (como expiração) antes de renderizar
     tasksToShow.forEach(task => automationRulesService.applyRules(task));
     // Coletar todas as tags DAS TAREFAS visíveis, evitando duplicatas por ID
     const allTagsMap = new Map();
@@ -90,7 +90,7 @@ export function renderTasks(arrayToRender, resetFilters = true) {
     if (currentSearchTerm) {
         tasksToShow = tasksToShow.filter(t => t.title.toLowerCase().includes(currentSearchTerm));
     }
-    // NOVO: Filtrar por tag usando ID
+    // Filtrar por tag usando ID
     if (activeTagFilter) {
         tasksToShow = tasksToShow.filter(t => {
             const taskTags = t.tags || [];
@@ -207,7 +207,7 @@ export function renderTasks(arrayToRender, resetFilters = true) {
                         await tagService.addTag(task.id, tag.id);
                         // Limpar input
                         li.querySelector(".inputNewTag").value = "";
-                        // ✅ IMPORTANTE: Recarregar TODAS as tags (via GET /tasks/:id/tags)
+                        // Recarregar TODAS as tags (via GET /tasks/:id/tags)
                         // Isso sincroniza a nova tag com o objeto task em memory
                         await reloadAllTagsForUser(selectedUserId || 0);
                         // Atualizar UI

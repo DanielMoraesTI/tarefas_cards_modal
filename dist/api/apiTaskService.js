@@ -20,7 +20,7 @@ async function getAllTasks(search = '', sort = '') {
         const url = `${BASE_URL}/tasks${query}`;
         const res = await fetch(url);
         if (!res.ok)
-            throw new Error(`HTTP Error: ${res.status} ${res.statusText}`);
+            throw new Error("Erro: " + res.status);
         const data = await res.json();
         // Verificar se as tarefas já vêm com tags
         if (Array.isArray(data) && data.length > 0) {

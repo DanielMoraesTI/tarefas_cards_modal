@@ -55,7 +55,7 @@ export async function toggleUserStatus(id) {
     }
     catch (error) {
         console.error('[UserService] Erro ao alternar status do usuário:', error);
-        throw error; // Relançar erro para handler superior
+        throw error; // Re-throw para tratamento na UI
     }
 }
 /**
